@@ -1,38 +1,94 @@
 /* =========================================================
-   QUIZFORGE AUTHENTICATION V2
-   ---------------------------------------------------------
-   Features:
-   - Sign up
-   - Login
-   - Logout
-   - Password changing
-   - Account settings
-   - Persistent account data
-   - Separate data for each account
-   - Admin account
-   - Session restoration
+   QUIZFORGE AUTH.JS
+   Complete Authentication System
+   =========================================================
+
+   FEATURES
+   • Login
+   • Sign up
+   • Valid email checking
+   • Required passwords
+   • Password changing
+   • Logout
+   • Persistent account data
+   • Separate data for every account
+   • Admin detection
+   • Admin permissions
+   • Session restoration
+   • Account settings
+   • Coins / skins / badges saved
+   • Logout does NOT delete account data
+
+   IMPORTANT:
+   This localStorage version is for a demo/GitHub Pages
+   prototype. Real production authentication should use
+   a secure backend with password hashing.
 ========================================================= */
 
 
 /* =========================================================
-   CONFIGURATION
+   SETTINGS
 ========================================================= */
 
-const QUIZFORGE_ADMIN_EMAIL =
-    "garfield678521@gmail.com";
+const QUIZFORGE_AUTH_CONFIG = {
+
+    ADMIN_EMAIL:
+        "garfield678521@gmail.com",
+
+    /*
+     * Initial admin password.
+     *
+     * WARNING:
+     * Because this is a GitHub Pages/local version,
+     * anyone who can inspect the source can potentially
+     * discover this password.
+     *
+     * Move authentication to a backend before using
+     * this for a real public service.
+     */
+
+    INITIAL_ADMIN_PASSWORD:
+        "OscArc22",
+
+    MIN_PASSWORD_LENGTH:
+        6,
+
+    USERS_STORAGE_KEY:
+        "quizforge_users",
+
+    SESSION_STORAGE_KEY:
+        "quizforge_session"
+
+};
 
 
-/*
- * Initial admin password.
- *
- * IMPORTANT:
- * This is only suitable for the local/demo version.
- * A production website should authenticate through
- * a secure backend instead of storing passwords here.
- */
+/* =========================================================
+   ADMIN PERMISSIONS
+========================================================= */
 
-const QUIZFORGE_INITIAL_ADMIN_PASSWORD =
-    "OscArc22";
+const QUIZFORGE_ADMIN_PERMISSIONS = {
+
+    MANAGE_USERS: true,
+
+    MANAGE_QUIZZES: true,
+
+    DELETE_PUBLIC_QUIZZES: true,
+
+    MANAGE_BADGES: true,
+
+    MANAGE_SKINS: true,
+
+    MANAGE_COINS: true,
+
+    VIEW_RESULTS: true,
+
+    VIEW_STATISTICS: true,
+
+    ADMIN_SETTINGS: true,
+
+    MODERATE_LIBRARY: true
+
+};
 
 
 /* =========================================================
@@ -42,12 +98,6 @@ const QUIZFORGE_INITIAL_ADMIN_PASSWORD =
 const Auth = {
 
     currentUser: null,
-
-    SESSION_KEY:
-        "quizforge_session",
-
-    USERS_KEY:
-        "quizforge_users",
 
 
     /* =====================================================
@@ -66,6 +116,73 @@ const Auth = {
 
 
     /* =====================================================
+       GET USERS
+    ===================================================== */
+
+    getUsers() {
+
+        try {
+
+            const stored =
+                localStorage.getItem(
+                    QUIZFORGE_AUTH_CONFIG.USERS_STORAGE_KEY
+                );
+
+
+            if (!stored) {
+
+                return [];
+
+            }
+
+
+            const users =
+                JSON.parse(stored);
+
+
+            if (!Array.isArray(users)) {
+
+                return [];
+
+            }
+
+
+            return users;
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "QuizForge: Could not load users.",
+                error
+            );
+
+            return [];
+
+        }
+
+    },
+
+
+    /* =====================================================
+       SAVE USERS
+    ===================================================== */
+
+    saveUsers(users) {
+
+        localStorage.setItem(
+
+            QUIZFORGE_AUTH_CONFIG.USERS_STORAGE_KEY,
+
+            JSON.stringify(users)
+
+        );
+
+    },
+
+
+    /* =====================================================
        CREATE ADMIN ACCOUNT
     ===================================================== */
 
@@ -75,15 +192,30 @@ const Auth = {
             this.getUsers();
 
 
-        const adminExists =
-            users.some(
+        const adminEmail =
+            QUIZFORGE_AUTH_CONFIG.ADMIN_EMAIL
+                .toLowerCase();
+
+
+        const existingAdmin =
+            users.find(
                 user =>
+                    user.email &&
                     user.email.toLowerCase() ===
-                    QUIZFORGE_ADMIN_EMAIL.toLowerCase()
+                    adminEmail
             );
 
 
-        if (adminExists) {
+        if (existingAdmin) {
+
+            /*
+             * Make sure the account remains
+             * recognised as admin.
+             */
+
+            existingAdmin.isAdmin = true;
+
+            this.saveUsers(users);
 
             return;
 
@@ -99,10 +231,14 @@ const Auth = {
                 "Admin",
 
             email:
-                QUIZFORGE_ADMIN_EMAIL,
+                adminEmail,
 
             password:
-                QUIZFORGE_INITIAL_ADMIN_PASSWORD,
+                QUIZFORGE_AUTH_CONFIG
+                    .INITIAL_ADMIN_PASSWORD,
+
+            isAdmin:
+                true,
 
             coins:
                 100,
@@ -125,9 +261,6 @@ const Auth = {
             totalScore:
                 0,
 
-            isAdmin:
-                true,
-
             createdAt:
                 new Date().toISOString(),
 
@@ -137,14 +270,56 @@ const Auth = {
         };
 
 
-        users.push(
-            admin
-        );
+        users.push(admin);
+
+        this.saveUsers(users);
+
+    },
 
 
-        this.saveUsers(
-            users
-        );
+    /* =====================================================
+       VALID EMAIL
+    ===================================================== */
+
+    isValidEmail(email) {
+
+        if (!email) {
+
+            return false;
+
+        }
+
+
+        email =
+            String(email).trim();
+
+
+        /*
+         * Basic but useful email validation.
+         */
+
+        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i
+            .test(email);
+
+    },
+
+
+    /* =====================================================
+       VALID PASSWORD
+    ===================================================== */
+
+    isValidPassword(password) {
+
+        if (!password) {
+
+            return false;
+
+        }
+
+
+        return String(password).length >=
+            QUIZFORGE_AUTH_CONFIG
+                .MIN_PASSWORD_LENGTH;
 
     },
 
@@ -156,28 +331,32 @@ const Auth = {
     signup(
         username,
         email,
-        password
+        password,
+        confirmPassword = password
     ) {
 
         username =
-            String(
-                username || ""
-            ).trim();
+            String(username || "")
+                .trim();
 
 
         email =
-            String(
-                email || ""
-            )
-            .trim()
-            .toLowerCase();
+            String(email || "")
+                .trim()
+                .toLowerCase();
 
 
         password =
-            String(
-                password || ""
-            );
+            String(password || "");
 
+
+        confirmPassword =
+            String(confirmPassword || "");
+
+
+        /* -----------------------------------------------
+           USERNAME
+        ------------------------------------------------ */
 
         if (!username) {
 
@@ -188,9 +367,7 @@ const Auth = {
         }
 
 
-        if (
-            username.length < 2
-        ) {
+        if (username.length < 2) {
 
             throw new Error(
                 "Username must be at least 2 characters."
@@ -199,11 +376,20 @@ const Auth = {
         }
 
 
-        if (
-            !this.isValidEmail(
-                email
-            )
-        ) {
+        /* -----------------------------------------------
+           EMAIL
+        ------------------------------------------------ */
+
+        if (!email) {
+
+            throw new Error(
+                "Please enter your email address."
+            );
+
+        }
+
+
+        if (!this.isValidEmail(email)) {
 
             throw new Error(
                 "Please enter a valid email address."
@@ -212,30 +398,65 @@ const Auth = {
         }
 
 
-        if (
-            password.length < 6
-        ) {
+        /* -----------------------------------------------
+           PASSWORD
+        ------------------------------------------------ */
+
+        if (!password) {
 
             throw new Error(
-                "Password must be at least 6 characters."
+                "Please enter a password."
             );
 
         }
 
 
+        if (!this.isValidPassword(password)) {
+
+            throw new Error(
+                `Password must be at least ${
+                    QUIZFORGE_AUTH_CONFIG
+                        .MIN_PASSWORD_LENGTH
+                } characters.`
+            );
+
+        }
+
+
+        /* -----------------------------------------------
+           CONFIRM PASSWORD
+        ------------------------------------------------ */
+
+        if (
+            password !==
+            confirmPassword
+        ) {
+
+            throw new Error(
+                "The passwords do not match."
+            );
+
+        }
+
+
+        /* -----------------------------------------------
+           CHECK EXISTING USER
+        ------------------------------------------------ */
+
         const users =
             this.getUsers();
 
 
-        const existingUser =
+        const existing =
             users.find(
                 user =>
+                    user.email &&
                     user.email.toLowerCase() ===
                     email
             );
 
 
-        if (existingUser) {
+        if (existing) {
 
             throw new Error(
                 "An account with this email already exists."
@@ -243,6 +464,10 @@ const Auth = {
 
         }
 
+
+        /* -----------------------------------------------
+           CREATE USER
+        ------------------------------------------------ */
 
         const user = {
 
@@ -255,6 +480,12 @@ const Auth = {
 
             password,
 
+            isAdmin:
+                email ===
+                QUIZFORGE_AUTH_CONFIG
+                    .ADMIN_EMAIL
+                    .toLowerCase(),
+
             coins:
                 100,
 
@@ -276,10 +507,6 @@ const Auth = {
             totalScore:
                 0,
 
-            isAdmin:
-                email ===
-                QUIZFORGE_ADMIN_EMAIL,
-
             createdAt:
                 new Date().toISOString(),
 
@@ -289,14 +516,9 @@ const Auth = {
         };
 
 
-        users.push(
-            user
-        );
+        users.push(user);
 
-
-        this.saveUsers(
-            users
-        );
+        this.saveUsers(users);
 
 
         /*
@@ -324,27 +546,44 @@ const Auth = {
     ) {
 
         email =
-            String(
-                email || ""
-            )
-            .trim()
-            .toLowerCase();
+            String(email || "")
+                .trim()
+                .toLowerCase();
 
 
         password =
-            String(
-                password || ""
-            );
+            String(password || "");
 
+
+        /* -----------------------------------------------
+           EMAIL REQUIRED
+        ------------------------------------------------ */
 
         if (!email) {
 
             throw new Error(
-                "Please enter your email."
+                "Please enter your email address."
             );
 
         }
 
+
+        /* -----------------------------------------------
+           EMAIL VALIDATION
+        ------------------------------------------------ */
+
+        if (!this.isValidEmail(email)) {
+
+            throw new Error(
+                "Please enter a valid email address."
+            );
+
+        }
+
+
+        /* -----------------------------------------------
+           PASSWORD REQUIRED
+        ------------------------------------------------ */
 
         if (!password) {
 
@@ -355,6 +594,10 @@ const Auth = {
         }
 
 
+        /* -----------------------------------------------
+           FIND ACCOUNT
+        ------------------------------------------------ */
+
         const users =
             this.getUsers();
 
@@ -362,8 +605,11 @@ const Auth = {
         const user =
             users.find(
                 item =>
+
+                    item.email &&
                     item.email.toLowerCase() ===
                     email &&
+
                     item.password ===
                     password
             );
@@ -378,33 +624,36 @@ const Auth = {
         }
 
 
-        /*
-         * Update login information.
-         */
+        /* -----------------------------------------------
+           UPDATE LOGIN
+        ------------------------------------------------ */
 
         user.lastLogin =
             new Date().toISOString();
 
 
+        /*
+         * Always calculate admin status from
+         * the protected admin email.
+         */
+
         user.isAdmin =
             user.email.toLowerCase() ===
-            QUIZFORGE_ADMIN_EMAIL.toLowerCase();
+            QUIZFORGE_AUTH_CONFIG
+                .ADMIN_EMAIL
+                .toLowerCase();
 
 
-        this.saveUsers(
-            users
-        );
+        this.saveUsers(users);
 
 
-        /*
-         * Make a fresh copy for the session.
-         */
+        /* -----------------------------------------------
+           CREATE SESSION
+        ------------------------------------------------ */
 
         this.currentUser =
             JSON.parse(
-                JSON.stringify(
-                    user
-                )
+                JSON.stringify(user)
             );
 
 
@@ -425,46 +674,51 @@ const Auth = {
     logout() {
 
         /*
-         * IMPORTANT:
+         * ONLY the session is removed.
          *
-         * We only remove the SESSION.
+         * The following remain saved:
          *
-         * We DO NOT delete:
-         * - account
-         * - quizzes
-         * - coins
-         * - skins
-         * - badges
-         * - statistics
+         * ✓ Account
+         * ✓ Quizzes
+         * ✓ Coins
+         * ✓ Skins
+         * ✓ Badges
+         * ✓ Statistics
          */
 
-        this.currentUser =
-            null;
+        this.currentUser = null;
 
 
         sessionStorage.removeItem(
-            this.SESSION_KEY
+            QUIZFORGE_AUTH_CONFIG
+                .SESSION_STORAGE_KEY
+        );
+
+
+        /*
+         * Remove any old session stored
+         * by previous versions.
+         */
+
+        localStorage.removeItem(
+            QUIZFORGE_AUTH_CONFIG
+                .SESSION_STORAGE_KEY
         );
 
 
         localStorage.removeItem(
-            this.SESSION_KEY
+            "quizforge_user"
         );
 
 
         this.updateUI();
 
-
-        /*
-         * Clear visible user-specific
-         * screens without deleting data.
-         */
-
-        this.resetVisibleAccountUI();
+        this.resetVisibleUI();
 
 
         /*
-         * Return user to login/home page.
+         * Return to login screen if
+         * app.js provides showPage().
          */
 
         if (
@@ -474,19 +728,50 @@ const Auth = {
 
             try {
 
-                showPage(
-                    "login"
+                showPage("login");
+
+            }
+
+            catch (error) {
+
+                console.warn(
+                    "QuizForge: Could not open login page.",
+                    error
                 );
-
-            } catch {
-
-                /*
-                 * Login page may not exist yet.
-                 */
 
             }
 
         }
+
+
+        return true;
+
+    },
+
+
+    /* =====================================================
+       SAVE SESSION
+    ===================================================== */
+
+    saveSession() {
+
+        if (!this.currentUser) {
+
+            return false;
+
+        }
+
+
+        sessionStorage.setItem(
+
+            QUIZFORGE_AUTH_CONFIG
+                .SESSION_STORAGE_KEY,
+
+            JSON.stringify(
+                this.currentUser
+            )
+
+        );
 
 
         return true;
@@ -500,53 +785,35 @@ const Auth = {
 
     restoreSession() {
 
-        let savedSession =
+        let saved =
             sessionStorage.getItem(
-                this.SESSION_KEY
+
+                QUIZFORGE_AUTH_CONFIG
+                    .SESSION_STORAGE_KEY
+
             );
 
 
         /*
-         * Also support older QuizForge
-         * versions that used localStorage.
+         * Compatibility with older version.
          */
 
-        if (!savedSession) {
+        if (!saved) {
 
-            savedSession =
+            saved =
                 localStorage.getItem(
-                    this.SESSION_KEY
+
+                    QUIZFORGE_AUTH_CONFIG
+                        .SESSION_STORAGE_KEY
+
                 );
 
         }
 
 
-        if (!savedSession) {
+        if (!saved) {
 
-            /*
-             * Backwards compatibility.
-             */
-
-            const oldUser =
-                localStorage.getItem(
-                    "quizforge_user"
-                );
-
-
-            if (oldUser) {
-
-                savedSession =
-                    oldUser;
-
-            }
-
-        }
-
-
-        if (!savedSession) {
-
-            this.currentUser =
-                null;
+            this.currentUser = null;
 
             return false;
 
@@ -556,15 +823,8 @@ const Auth = {
         try {
 
             const sessionUser =
-                JSON.parse(
-                    savedSession
-                );
+                JSON.parse(saved);
 
-
-            /*
-             * Find the latest saved version
-             * of the account.
-             */
 
             const users =
                 this.getUsers();
@@ -580,8 +840,7 @@ const Auth = {
 
             if (!actualUser) {
 
-                this.currentUser =
-                    null;
+                this.currentUser = null;
 
                 this.clearSession();
 
@@ -589,6 +848,10 @@ const Auth = {
 
             }
 
+
+            /*
+             * Load the latest account data.
+             */
 
             this.currentUser =
                 JSON.parse(
@@ -601,7 +864,8 @@ const Auth = {
             this.currentUser.isAdmin =
                 this.currentUser.email
                     .toLowerCase() ===
-                QUIZFORGE_ADMIN_EMAIL
+                QUIZFORGE_AUTH_CONFIG
+                    .ADMIN_EMAIL
                     .toLowerCase();
 
 
@@ -611,16 +875,50 @@ const Auth = {
 
         }
 
-        catch {
+        catch (error) {
 
-            this.currentUser =
-                null;
+            console.error(
+                "QuizForge: Invalid session.",
+                error
+            );
+
+
+            this.currentUser = null;
 
             this.clearSession();
 
             return false;
 
         }
+
+    },
+
+
+    /* =====================================================
+       CLEAR SESSION
+    ===================================================== */
+
+    clearSession() {
+
+        sessionStorage.removeItem(
+
+            QUIZFORGE_AUTH_CONFIG
+                .SESSION_STORAGE_KEY
+
+        );
+
+
+        localStorage.removeItem(
+
+            QUIZFORGE_AUTH_CONFIG
+                .SESSION_STORAGE_KEY
+
+        );
+
+
+        localStorage.removeItem(
+            "quizforge_user"
+        );
 
     },
 
@@ -635,9 +933,7 @@ const Auth = {
         confirmPassword
     ) {
 
-        if (
-            !this.currentUser
-        ) {
+        if (!this.currentUser) {
 
             throw new Error(
                 "You must be logged in."
@@ -664,9 +960,18 @@ const Auth = {
             );
 
 
-        /*
-         * Check old password.
-         */
+        /* -----------------------------------------------
+           CURRENT PASSWORD
+        ------------------------------------------------ */
+
+        if (!currentPassword) {
+
+            throw new Error(
+                "Please enter your current password."
+            );
+
+        }
+
 
         if (
             currentPassword !==
@@ -680,25 +985,38 @@ const Auth = {
         }
 
 
-        /*
-         * Check new password length.
-         */
+        /* -----------------------------------------------
+           NEW PASSWORD
+        ------------------------------------------------ */
 
-        if (
-            newPassword.length < 6
-        ) {
+        if (!newPassword) {
 
             throw new Error(
-                "Your new password must be at least 6 characters."
+                "Please enter a new password."
             );
 
         }
 
 
-        /*
-         * Make sure the two new passwords
-         * match.
-         */
+        if (
+            !this.isValidPassword(
+                newPassword
+            )
+        ) {
+
+            throw new Error(
+                `Your new password must be at least ${
+                    QUIZFORGE_AUTH_CONFIG
+                        .MIN_PASSWORD_LENGTH
+                } characters.`
+            );
+
+        }
+
+
+        /* -----------------------------------------------
+           CONFIRM
+        ------------------------------------------------ */
 
         if (
             newPassword !==
@@ -712,9 +1030,9 @@ const Auth = {
         }
 
 
-        /*
-         * Don't allow the same password.
-         */
+        /* -----------------------------------------------
+           SAME PASSWORD
+        ------------------------------------------------ */
 
         if (
             currentPassword ===
@@ -728,9 +1046,9 @@ const Auth = {
         }
 
 
-        /*
-         * Update saved account.
-         */
+        /* -----------------------------------------------
+           FIND USER
+        ------------------------------------------------ */
 
         const users =
             this.getUsers();
@@ -753,17 +1071,19 @@ const Auth = {
         }
 
 
+        /* -----------------------------------------------
+           UPDATE PASSWORD
+        ------------------------------------------------ */
+
         users[index].password =
             newPassword;
 
 
-        this.saveUsers(
-            users
-        );
+        this.saveUsers(users);
 
 
         /*
-         * Update active session.
+         * Update current session.
          */
 
         this.currentUser.password =
@@ -779,352 +1099,56 @@ const Auth = {
 
 
     /* =====================================================
-       SETTINGS — CHANGE PASSWORD UI
+       UPDATE ACCOUNT
     ===================================================== */
 
-    renderPasswordSettings(
-        containerID =
-            "passwordSettings"
-    ) {
-
-        const container =
-            document.getElementById(
-                containerID
-            );
-
-
-        if (!container) {
-            return;
-        }
-
-
-        if (!this.currentUser) {
-
-            container.innerHTML = `
-
-                <div class="card">
-
-                    <h3>
-                        🔐 Login Required
-                    </h3>
-
-                    <p>
-                        Log in to change your password.
-                    </p>
-
-                </div>
-
-            `;
-
-            return;
-
-        }
-
-
-        container.innerHTML = `
-
-            <div class="card">
-
-                <h2>
-                    🔑 Change Password
-                </h2>
-
-                <p>
-                    Your current password is required
-                    before you can create a new one.
-                </p>
-
-
-                <form
-                    id="changePasswordForm"
-                    onsubmit="
-                        Auth.handlePasswordChange(event)
-                    "
-                >
-
-                    <label>
-                        Current Password
-                    </label>
-
-                    <input
-                        id="currentPassword"
-                        type="password"
-                        autocomplete="current-password"
-                        required
-                        placeholder="Current password"
-                    />
-
-
-                    <label>
-                        New Password
-                    </label>
-
-                    <input
-                        id="newPassword"
-                        type="password"
-                        autocomplete="new-password"
-                        minlength="6"
-                        required
-                        placeholder="New password"
-                    />
-
-
-                    <label>
-                        Confirm New Password
-                    </label>
-
-                    <input
-                        id="confirmPassword"
-                        type="password"
-                        autocomplete="new-password"
-                        minlength="6"
-                        required
-                        placeholder="Confirm new password"
-                    />
-
-
-                    <button
-                        type="submit"
-                        class="primary"
-                    >
-                        🔒 Change Password
-                    </button>
-
-                </form>
-
-
-                <div
-                    id="passwordChangeMessage"
-                ></div>
-
-            </div>
-
-        `;
-
-    },
-
-
-    /* =====================================================
-       PASSWORD FORM HANDLER
-    ===================================================== */
-
-    handlePasswordChange(
-        event
-    ) {
-
-        event.preventDefault();
-
-
-        const current =
-            document.getElementById(
-                "currentPassword"
-            )?.value;
-
-
-        const newPassword =
-            document.getElementById(
-                "newPassword"
-            )?.value;
-
-
-        const confirm =
-            document.getElementById(
-                "confirmPassword"
-            )?.value;
-
-
-        const message =
-            document.getElementById(
-                "passwordChangeMessage"
-            );
-
-
-        try {
-
-            this.changePassword(
-                current,
-                newPassword,
-                confirm
-            );
-
-
-            if (message) {
-
-                message.innerHTML = `
-
-                    <div class="success-message">
-
-                        ✅ Password changed successfully!
-
-                    </div>
-
-                `;
-
-            }
-
-
-            document.getElementById(
-                "changePasswordForm"
-            )?.reset();
-
-
-        }
-
-        catch(error) {
-
-            if (message) {
-
-                message.innerHTML = `
-
-                    <div class="error-message">
-
-                        ❌
-                        ${this.escape(
-                            error.message
-                        )}
-
-                    </div>
-
-                `;
-
-            }
-
-        }
-
-    },
-
-
-    /* =====================================================
-       ACCOUNT SETTINGS
-    ===================================================== */
-
-    renderSettings(
-        containerID =
-            "accountSettings"
-    ) {
-
-        const container =
-            document.getElementById(
-                containerID
-            );
-
-
-        if (!container) {
-            return;
-        }
-
-
-        if (!this.currentUser) {
-
-            container.innerHTML = `
-
-                <div class="card">
-
-                    <h2>
-                        🔐 You are logged out
-                    </h2>
-
-                    <button
-                        class="primary"
-                        onclick="
-                            showPage('login')
-                        "
-                    >
-                        Login
-                    </button>
-
-                </div>
-
-            `;
-
-            return;
-
-        }
-
-
-        container.innerHTML = `
-
-            <div class="card">
-
-                <h1>
-                    ⚙️ Account Settings
-                </h1>
-
-
-                <div class="account-info">
-
-                    <p>
-                        <strong>
-                            Username:
-                        </strong>
-
-                        ${this.escape(
-                            this.currentUser.username
-                        )}
-                    </p>
-
-
-                    <p>
-                        <strong>
-                            Email:
-                        </strong>
-
-                        ${this.escape(
-                            this.currentUser.email
-                        )}
-                    </p>
-
-
-                    <p>
-                        <strong>
-                            Coins:
-                        </strong>
-
-                        🪙
-                        ${this.currentUser.coins || 0}
-                    </p>
-
-
-                    ${
-                        this.isAdmin()
-                            ? `
-                                <p>
-                                    👑
-                                    <strong>
-                                        Administrator
-                                    </strong>
-                                </p>
-                            `
-                            : ""
-                    }
-
-                </div>
-
-            </div>
-
-        `;
-
-
-        /*
-         * Also render password settings.
-         */
-
-        this.renderPasswordSettings();
-
-    },
-
-
-    /* =====================================================
-       UPDATE USER
-    ===================================================== */
-
-    updateUser(
-        changes
-    ) {
+    updateUser(changes = {}) {
 
         if (!this.currentUser) {
 
             return false;
+
+        }
+
+
+        /*
+         * Don't allow users to change their
+         * admin status manually.
+         */
+
+        delete changes.isAdmin;
+
+
+        /*
+         * Don't allow users to change their
+         * email to impersonate the admin.
+         *
+         * A proper backend should enforce this too.
+         */
+
+        if (
+            changes.email
+        ) {
+
+            changes.email =
+                String(
+                    changes.email
+                )
+                .trim()
+                .toLowerCase();
+
+
+            if (
+                !this.isValidEmail(
+                    changes.email
+                )
+            ) {
+
+                throw new Error(
+                    "Please enter a valid email address."
+                );
+
+            }
 
         }
 
@@ -1135,20 +1159,15 @@ const Auth = {
         );
 
 
-        /*
-         * Make sure admin status cannot be
-         * changed by normal account data.
-         */
-
         this.currentUser.isAdmin =
             this.currentUser.email
                 .toLowerCase() ===
-            QUIZFORGE_ADMIN_EMAIL
+            QUIZFORGE_AUTH_CONFIG
+                .ADMIN_EMAIL
                 .toLowerCase();
 
 
         this.saveCurrentUser();
-
 
         this.updateUI();
 
@@ -1165,7 +1184,9 @@ const Auth = {
     saveCurrentUser() {
 
         if (!this.currentUser) {
+
             return false;
+
         }
 
 
@@ -1196,10 +1217,7 @@ const Auth = {
             );
 
 
-        this.saveUsers(
-            users
-        );
-
+        this.saveUsers(users);
 
         this.saveSession();
 
@@ -1210,143 +1228,15 @@ const Auth = {
 
 
     /* =====================================================
-       USER DATA
-    ===================================================== */
-
-    getUsers() {
-
-        try {
-
-            const data =
-                localStorage.getItem(
-                    this.USERS_KEY
-                );
-
-
-            if (!data) {
-
-                return [];
-
-            }
-
-
-            const users =
-                JSON.parse(
-                    data
-                );
-
-
-            return Array.isArray(
-                users
-            )
-                ? users
-                : [];
-
-        }
-
-        catch {
-
-            return [];
-
-        }
-
-    },
-
-
-    saveUsers(
-        users
-    ) {
-
-        localStorage.setItem(
-            this.USERS_KEY,
-            JSON.stringify(
-                users
-            )
-        );
-
-    },
-
-
-    /* =====================================================
-       SESSION
-    ===================================================== */
-
-    saveSession() {
-
-        if (!this.currentUser) {
-            return;
-        }
-
-
-        sessionStorage.setItem(
-            this.SESSION_KEY,
-            JSON.stringify(
-                this.currentUser
-            )
-        );
-
-    },
-
-
-    clearSession() {
-
-        sessionStorage.removeItem(
-            this.SESSION_KEY
-        );
-
-
-        localStorage.removeItem(
-            this.SESSION_KEY
-        );
-
-
-        localStorage.removeItem(
-            "quizforge_user"
-        );
-
-    },
-
-
-    /* =====================================================
-       CHECK LOGIN
-    ===================================================== */
-
-    isLoggedIn() {
-
-        return !!this.currentUser;
-
-    },
-
-
-    /* =====================================================
-       ADMIN
-    ===================================================== */
-
-    isAdmin() {
-
-        if (!this.currentUser) {
-            return false;
-        }
-
-
-        return (
-            this.currentUser.email
-                .toLowerCase() ===
-            QUIZFORGE_ADMIN_EMAIL
-                .toLowerCase()
-        );
-
-    },
-
-
-    /* =====================================================
-       CURRENT USER
+       GET CURRENT USER
     ===================================================== */
 
     getCurrentUser() {
 
         if (!this.currentUser) {
+
             return null;
+
         }
 
 
@@ -1356,54 +1246,513 @@ const Auth = {
 
 
     /* =====================================================
-       VALIDATE EMAIL
+       IS LOGGED IN
     ===================================================== */
 
-    isValidEmail(
-        email
-    ) {
+    isLoggedIn() {
 
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-            .test(email);
-
-    },
-
-
-    /* =====================================================
-       GENERATE ID
-    ===================================================== */
-
-    createID() {
-
-        if (
-            window.crypto &&
-            typeof crypto.randomUUID ===
-            "function"
-        ) {
-
-            return crypto.randomUUID();
-
-        }
-
-
-        return (
-            Date.now() +
-            "-" +
-            Math.random()
-                .toString(36)
-                .slice(2)
+        return Boolean(
+            this.currentUser
         );
 
     },
 
 
     /* =====================================================
-       RESET VISIBLE ACCOUNT UI
-       -----------------------------------------------------
-       This DOES NOT delete saved data.
+       IS ADMIN
     ===================================================== */
 
-    resetVisibleAccountUI() {
+    isAdmin() {
+
+        if (!this.currentUser) {
+
+            return false;
+
+        }
+
+
+        return (
+            this.currentUser.email
+                .toLowerCase() ===
+            QUIZFORGE_AUTH_CONFIG
+                .ADMIN_EMAIL
+                .toLowerCase()
+        );
+
+    },
+
+
+    /* =====================================================
+       HAS ADMIN PERMISSION
+    ===================================================== */
+
+    hasPermission(
+        permission
+    ) {
+
+        if (!this.isAdmin()) {
+
+            return false;
+
+        }
+
+
+        return (
+            QUIZFORGE_ADMIN_PERMISSIONS[
+                permission
+            ] === true
+        );
+
+    },
+
+
+    /* =====================================================
+       REQUIRE ADMIN
+    ===================================================== */
+
+    requireAdmin(
+        permission = null
+    ) {
+
+        if (!this.isAdmin()) {
+
+            throw new Error(
+                "Administrator permission required."
+            );
+
+        }
+
+
+        if (
+            permission &&
+            !this.hasPermission(
+                permission
+            )
+        ) {
+
+            throw new Error(
+                "You do not have permission to perform this action."
+            );
+
+        }
+
+
+        return true;
+
+    },
+
+
+    /* =====================================================
+       GET ADMIN PERMISSIONS
+    ===================================================== */
+
+    getAdminPermissions() {
+
+        if (!this.isAdmin()) {
+
+            return {};
+
+        }
+
+
+        return {
+            ...QUIZFORGE_ADMIN_PERMISSIONS
+        };
+
+    },
+
+
+    /* =====================================================
+       UPDATE COINS
+    ===================================================== */
+
+    addCoins(
+        amount
+    ) {
+
+        if (!this.currentUser) {
+
+            return false;
+
+        }
+
+
+        amount =
+            Number(amount);
+
+
+        if (
+            !Number.isFinite(amount)
+        ) {
+
+            return false;
+
+        }
+
+
+        this.currentUser.coins =
+            Math.max(
+                0,
+                Number(
+                    this.currentUser.coins || 0
+                ) + amount
+            );
+
+
+        this.saveCurrentUser();
+
+
+        return this.currentUser.coins;
+
+    },
+
+
+    /* =====================================================
+       ADD SKIN
+    ===================================================== */
+
+    addSkin(
+        skinID
+    ) {
+
+        if (!this.currentUser) {
+
+            return false;
+
+        }
+
+
+        if (
+            !this.currentUser.skins
+        ) {
+
+            this.currentUser.skins = [];
+
+        }
+
+
+        if (
+            !this.currentUser.skins
+                .includes(skinID)
+        ) {
+
+            this.currentUser.skins.push(
+                skinID
+            );
+
+        }
+
+
+        this.saveCurrentUser();
+
+
+        return true;
+
+    },
+
+
+    /* =====================================================
+       EQUIP SKIN
+    ===================================================== */
+
+    equipSkin(
+        skinID
+    ) {
+
+        if (!this.currentUser) {
+
+            return false;
+
+        }
+
+
+        if (
+            !this.currentUser.skins ||
+            !this.currentUser.skins.includes(
+                skinID
+            )
+        ) {
+
+            throw new Error(
+                "You do not own this skin."
+            );
+
+        }
+
+
+        this.currentUser.selectedSkin =
+            skinID;
+
+
+        this.saveCurrentUser();
+
+
+        return true;
+
+    },
+
+
+    /* =====================================================
+       ADD BADGE
+    ===================================================== */
+
+    addBadge(
+        badgeID
+    ) {
+
+        if (!this.currentUser) {
+
+            return false;
+
+        }
+
+
+        if (
+            !this.currentUser.badges
+        ) {
+
+            this.currentUser.badges = [];
+
+        }
+
+
+        if (
+            !this.currentUser.badges
+                .includes(badgeID)
+        ) {
+
+            this.currentUser.badges.push(
+                badgeID
+            );
+
+        }
+
+
+        this.saveCurrentUser();
+
+
+        return true;
+
+    },
+
+
+    /* =====================================================
+       PASSWORD SETTINGS UI
+    ===================================================== */
+
+    renderPasswordSettings(
+        containerID =
+            "passwordSettings"
+    ) {
+
+        const container =
+            document.getElementById(
+                containerID
+            );
+
+
+        if (!container) {
+
+            return;
+
+        }
+
+
+        if (!this.currentUser) {
+
+            container.innerHTML = `
+
+                <div class="card">
+
+                    <h3>🔐 Login Required</h3>
+
+                    <p>
+                        You must be logged in
+                        to change your password.
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        container.innerHTML = `
+
+            <div class="card">
+
+                <h2>🔑 Change Password</h2>
+
+                <p>
+                    Enter your current password,
+                    then choose a new password.
+                </p>
+
+
+                <form
+                    id="changePasswordForm"
+                    onsubmit="
+                        Auth.handlePasswordChange(event)
+                    "
+                >
+
+                    <label>
+                        Current Password
+                    </label>
+
+                    <input
+                        id="currentPassword"
+                        type="password"
+                        autocomplete="current-password"
+                        required
+                        placeholder="Current password"
+                    >
+
+
+                    <label>
+                        New Password
+                    </label>
+
+                    <input
+                        id="newPassword"
+                        type="password"
+                        autocomplete="new-password"
+                        minlength="6"
+                        required
+                        placeholder="New password"
+                    >
+
+
+                    <label>
+                        Confirm New Password
+                    </label>
+
+                    <input
+                        id="confirmPassword"
+                        type="password"
+                        autocomplete="new-password"
+                        minlength="6"
+                        required
+                        placeholder="Confirm new password"
+                    >
+
+
+                    <button
+                        type="submit"
+                    >
+                        🔒 Change Password
+                    </button>
+
+
+                    <div
+                        id="passwordChangeMessage"
+                    ></div>
+
+                </form>
+
+            </div>
+
+        `;
+
+    },
+
+
+    /* =====================================================
+       HANDLE PASSWORD FORM
+    ===================================================== */
+
+    handlePasswordChange(
+        event
+    ) {
+
+        event.preventDefault();
+
+
+        const current =
+            document.getElementById(
+                "currentPassword"
+            )?.value || "";
+
+
+        const newPassword =
+            document.getElementById(
+                "newPassword"
+            )?.value || "";
+
+
+        const confirm =
+            document.getElementById(
+                "confirmPassword"
+            )?.value || "";
+
+
+        const message =
+            document.getElementById(
+                "passwordChangeMessage"
+            );
+
+
+        try {
+
+            this.changePassword(
+                current,
+                newPassword,
+                confirm
+            );
+
+
+            if (message) {
+
+                message.innerHTML = `
+
+                    <div class="success-message">
+                        ✅ Password changed successfully!
+                    </div>
+
+                `;
+
+            }
+
+
+            document
+                .getElementById(
+                    "changePasswordForm"
+                )
+                ?.reset();
+
+        }
+
+        catch (error) {
+
+            if (message) {
+
+                message.innerHTML = `
+
+                    <div class="error-message">
+                        ❌
+                        ${this.escape(
+                            error.message
+                        )}
+                    </div>
+
+                `;
+
+            }
+
+        }
+
+    },
+
+
+    /* =====================================================
+       RESET VISIBLE UI
+       DOES NOT DELETE DATA
+    ===================================================== */
+
+    resetVisibleUI() {
 
         const username =
             document.getElementById(
@@ -1459,9 +1808,7 @@ const Auth = {
 
                 <div class="card">
 
-                    <h2>
-                        🔐 Logged Out
-                    </h2>
+                    <h2>🔐 Logged Out</h2>
 
                     <p>
                         Log in to view your account.
@@ -1490,7 +1837,7 @@ const Auth = {
 
 
     /* =====================================================
-       UPDATE HEADER/UI
+       UPDATE UI
     ===================================================== */
 
     updateUI() {
@@ -1519,9 +1866,7 @@ const Auth = {
             );
 
 
-        if (
-            this.currentUser
-        ) {
+        if (this.currentUser) {
 
             if (username) {
 
@@ -1534,8 +1879,7 @@ const Auth = {
             if (coins) {
 
                 coins.textContent =
-                    this.currentUser.coins ||
-                    0;
+                    this.currentUser.coins || 0;
 
             }
 
@@ -1543,8 +1887,7 @@ const Auth = {
             if (coinCount) {
 
                 coinCount.textContent =
-                    this.currentUser.coins ||
-                    0;
+                    this.currentUser.coins || 0;
 
             }
 
@@ -1598,12 +1941,38 @@ const Auth = {
 
 
     /* =====================================================
+       GENERATE USER ID
+    ===================================================== */
+
+    createID() {
+
+        if (
+            window.crypto &&
+            typeof crypto.randomUUID ===
+            "function"
+        ) {
+
+            return crypto.randomUUID();
+
+        }
+
+
+        return (
+            Date.now() +
+            "-" +
+            Math.random()
+                .toString(36)
+                .substring(2)
+        );
+
+    },
+
+
+    /* =====================================================
        ESCAPE HTML
     ===================================================== */
 
-    escape(
-        value
-    ) {
+    escape(value) {
 
         return String(
             value ?? ""
@@ -1635,7 +2004,7 @@ const Auth = {
 
 
 /* =========================================================
-   START AUTHENTICATION
+   START AUTH SYSTEM
 ========================================================= */
 
 document.addEventListener(
