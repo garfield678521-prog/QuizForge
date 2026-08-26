@@ -11,178 +11,497 @@
 
 <body>
 
-<header>
-    <div class="logo">🧠 QuizForge</div>
+<header class="topbar">
 
-    <nav>
-        <button onclick="showPage('home')">Home</button>
-        <button onclick="showPage('create')">Create</button>
-        <button onclick="showPage('play')">Play</button>
+    <div class="logo" onclick="navigate('home')">
+        🧠 QuizForge
+    </div>
+
+    <nav id="mainNav">
+
+        <button onclick="navigate('home')">🏠 Home</button>
+
+        <button onclick="navigate('library')">
+            📚 Library
+        </button>
+
+        <button onclick="newQuiz()">
+            ➕ Create
+        </button>
+
+        <button onclick="navigate('join')">
+            🎮 Join
+        </button>
+
+        <button onclick="navigate('host')">
+            🎤 Host
+        </button>
+
+        <button onclick="navigate('myquizzes')">
+            📖 My Quizzes
+        </button>
+
     </nav>
+
+    <div class="account-area">
+
+        <span id="coinDisplay">🪙 0</span>
+
+        <button
+            id="accountButton"
+            onclick="navigate('account')"
+        >
+            👤 Login
+        </button>
+
+    </div>
+
 </header>
 
 
 <main>
 
-    <!-- HOME -->
+<!-- ================= HOME ================= -->
 
-    <section id="home" class="page active">
+<section id="home" class="page active">
 
-        <div class="hero">
+    <div class="hero">
 
-            <h1>Create. Share. Play.</h1>
+        <div class="hero-icon">
+            🧠
+        </div>
 
+        <h1>QuizForge</h1>
+
+        <h2>Create. Share. Compete.</h2>
+
+        <p>
+            Build your own quizzes, challenge your friends
+            and discover quizzes from around the world.
+        </p>
+
+        <div class="hero-buttons">
+
+            <button
+                class="primary big"
+                onclick="newQuiz()"
+            >
+                ➕ Create Quiz
+            </button>
+
+            <button
+                class="secondary big"
+                onclick="navigate('library')"
+            >
+                📚 Browse Library
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="feature-grid">
+
+        <div class="feature-card">
+            <div>📝</div>
+            <h3>Create</h3>
             <p>
-                Make your own quizzes and share them with anyone.
+                Make quizzes with your own questions
+                and answers.
             </p>
+        </div>
 
-            <div class="hero-buttons">
+        <div class="feature-card">
+            <div>🌎</div>
+            <h3>Discover</h3>
+            <p>
+                Find quizzes shared by people
+                around the world.
+            </p>
+        </div>
 
-                <button class="primary" onclick="showPage('create')">
-                    ➕ Create Quiz
-                </button>
+        <div class="feature-card">
+            <div>🎮</div>
+            <h3>Compete</h3>
+            <p>
+                Host multiplayer games and compete
+                for the highest score.
+            </p>
+        </div>
 
-                <button class="secondary" onclick="showPage('play')">
-                    ▶ Play Quiz
-                </button>
+        <div class="feature-card">
+            <div>🏆</div>
+            <h3>Earn</h3>
+            <p>
+                Earn coins, skins and badges.
+            </p>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ================= LIBRARY ================= -->
+
+<section id="library" class="page">
+
+    <div class="page-title">
+
+        <h1>📚 Public Quiz Library</h1>
+
+        <p>
+            Discover quizzes created by the community.
+        </p>
+
+    </div>
+
+
+    <div class="search-bar">
+
+        <input
+            id="librarySearch"
+            placeholder="🔎 Search quizzes..."
+            oninput="renderLibrary()"
+        >
+
+        <select
+            id="libraryCategory"
+            onchange="renderLibrary()"
+        >
+
+            <option value="all">All Categories</option>
+            <option value="Minecraft">Minecraft</option>
+            <option value="Maths">Maths</option>
+            <option value="Science">Science</option>
+            <option value="History">History</option>
+            <option value="Gaming">Gaming</option>
+            <option value="Other">Other</option>
+
+        </select>
+
+    </div>
+
+
+    <div id="libraryGrid" class="quiz-grid"></div>
+
+</section>
+
+
+<!-- ================= CREATE ================= -->
+
+<section id="create" class="page">
+
+    <div class="page-title">
+
+        <h1>➕ Create Quiz</h1>
+
+        <p>
+            Start with a completely blank quiz.
+        </p>
+
+    </div>
+
+
+    <div class="card">
+
+        <label>Quiz Title</label>
+
+        <input
+            id="quizTitle"
+            placeholder="My Awesome Quiz"
+        >
+
+
+        <label>Description</label>
+
+        <textarea
+            id="quizDescription"
+            placeholder="What is your quiz about?"
+        ></textarea>
+
+
+        <div class="two-column">
+
+            <div>
+
+                <label>Category</label>
+
+                <select id="quizCategory">
+
+                    <option>Other</option>
+                    <option>Minecraft</option>
+                    <option>Maths</option>
+                    <option>Science</option>
+                    <option>History</option>
+                    <option>Gaming</option>
+
+                </select>
+
+            </div>
+
+
+            <div>
+
+                <label>Difficulty</label>
+
+                <select id="quizDifficulty">
+
+                    <option>Easy</option>
+                    <option>Medium</option>
+                    <option>Hard</option>
+                    <option>Extreme</option>
+
+                </select>
 
             </div>
 
         </div>
 
-
-        <div class="card">
-
-            <h2>📂 Import a Quiz</h2>
-
-            <p>
-                Load a <strong>.qz</strong> quiz file from your device.
-            </p>
-
-            <input
-                type="file"
-                id="importFile"
-                accept=".qz,.json"
-                onchange="importQuiz(event)"
-            >
-
-        </div>
+    </div>
 
 
-        <div class="card">
+    <div class="card">
 
-            <h2>💾 Saved Quiz</h2>
-
-            <div id="savedQuiz">
-                No quiz saved yet.
-            </div>
-
-        </div>
-
-    </section>
-
-
-
-    <!-- CREATE -->
-
-    <section id="create" class="page">
-
-        <div class="card">
-
-            <h1>📝 Quiz Creator</h1>
-
-            <label>Quiz Title</label>
-
-            <input
-                id="quizTitle"
-                type="text"
-                placeholder="My Awesome Quiz"
-            >
-
-
-            <label>Description</label>
-
-            <textarea
-                id="quizDescription"
-                placeholder="Test your knowledge!"
-            ></textarea>
-
-        </div>
-
-
-        <div class="card">
+        <div class="section-header">
 
             <h2>Questions</h2>
 
-            <div id="questionList"></div>
-
-            <button class="add-question" onclick="addQuestion()">
-                ➕ Add Question
-            </button>
+            <span id="questionCount">
+                0 questions
+            </span>
 
         </div>
 
 
-        <div class="creator-actions">
+        <div id="questionList"></div>
 
-            <button class="primary" onclick="saveQuiz()">
-                💾 Save Quiz
-            </button>
 
-            <button class="secondary" onclick="exportQuiz()">
-                📤 Export .qz
-            </button>
+        <button
+            class="add-question"
+            onclick="addQuestion()"
+        >
+            ➕ Add Question
+        </button>
 
-            <button class="secondary" onclick="shareQuiz()">
-                🔗 Share
-            </button>
+    </div>
 
-            <button class="primary" onclick="startQuiz()">
-                ▶ Play Quiz
-            </button>
 
+    <div class="creator-actions">
+
+        <button
+            class="primary"
+            onclick="saveCurrentQuiz()"
+        >
+            💾 Save
+        </button>
+
+        <button
+            class="secondary"
+            onclick="exportCurrentQuiz()"
+        >
+            📤 Export .qz
+        </button>
+
+        <button
+            class="secondary"
+            onclick="shareCurrentQuiz()"
+        >
+            🔗 Share
+        </button>
+
+        <button
+            class="primary"
+            onclick="playCurrentQuiz()"
+        >
+            ▶ Play
+        </button>
+
+        <button
+            class="publish"
+            onclick="publishQuiz()"
+        >
+            🌎 Publish
+        </button>
+
+    </div>
+
+</section>
+
+
+<!-- ================= MY QUIZZES ================= -->
+
+<section id="myquizzes" class="page">
+
+    <div class="page-title">
+
+        <h1>📖 My Quizzes</h1>
+
+        <button
+            class="primary"
+            onclick="newQuiz()"
+        >
+            ➕ New Quiz
+        </button>
+
+    </div>
+
+
+    <div
+        id="myQuizGrid"
+        class="quiz-grid"
+    ></div>
+
+</section>
+
+
+<!-- ================= JOIN ================= -->
+
+<section id="join" class="page">
+
+    <div class="center-card">
+
+        <div class="large-icon">🎮</div>
+
+        <h1>Join Quiz</h1>
+
+        <p>
+            Enter the room code given by the host.
+        </p>
+
+        <input
+            id="roomCode"
+            class="room-input"
+            maxlength="8"
+            placeholder="123456"
+        >
+
+        <button
+            class="primary big full"
+            onclick="joinRoom()"
+        >
+            🎮 Join Game
+        </button>
+
+        <p id="joinMessage"></p>
+
+    </div>
+
+</section>
+
+
+<!-- ================= HOST ================= -->
+
+<section id="host" class="page">
+
+    <div class="page-title">
+
+        <h1>🎤 Host Quiz</h1>
+
+        <p>
+            Choose one of your quizzes to host.
+        </p>
+
+    </div>
+
+
+    <div id="hostQuizList"></div>
+
+</section>
+
+
+<!-- ================= PLAY ================= -->
+
+<section id="play" class="page">
+
+    <div id="playArea"></div>
+
+</section>
+
+
+<!-- ================= SHOP ================= -->
+
+<section id="shop" class="page">
+
+    <div class="page-title">
+
+        <h1>🛒 Skin Shop</h1>
+
+        <p>
+            Spend coins to unlock new skins.
+        </p>
+
+    </div>
+
+
+    <div
+        id="shopGrid"
+        class="shop-grid"
+    ></div>
+
+</section>
+
+
+<!-- ================= BADGES ================= -->
+
+<section id="badges" class="page">
+
+    <div class="page-title">
+
+        <h1>🏅 Badges</h1>
+
+        <p>
+            Complete achievements to earn badges.
+        </p>
+
+    </div>
+
+
+    <div
+        id="badgeGrid"
+        class="badge-grid"
+    ></div>
+
+</section>
+
+
+<!-- ================= ACCOUNT ================= -->
+
+<section id="account" class="page">
+
+    <div class="center-card">
+
+        <div class="large-icon">
+            👤
         </div>
 
-    </section>
+        <h1>QuizForge Account</h1>
 
+        <div id="authArea"></div>
 
+    </div>
 
-    <!-- PLAY -->
-
-    <section id="play" class="page">
-
-        <div id="playArea">
-
-            <div class="card">
-
-                <h1>🎮 Quiz Player</h1>
-
-                <p>
-                    Import a quiz or create one first.
-                </p>
-
-                <button
-                    class="primary"
-                    onclick="showPage('create')"
-                >
-                    Create Quiz
-                </button>
-
-            </div>
-
-        </div>
-
-    </section>
+</section>
 
 </main>
 
 
 <footer>
-    <p>QuizForge • Made for GitHub Pages</p>
+
+    <p>
+        🧠 QuizForge
+    </p>
+
+    <p>
+        Create • Share • Play • Compete
+    </p>
+
 </footer>
 
 
-<script src="script.js"></script>
+<script src="qz.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
