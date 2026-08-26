@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>QuizForge</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+    <div class="logo">🧠 QuizForge</div>
+
+    <nav>
+        <button onclick="showPage('home')">Home</button>
+        <button onclick="showPage('create')">Create</button>
+        <button onclick="showPage('play')">Play</button>
+    </nav>
+</header>
+
+
+<main>
+
+    <!-- HOME -->
+
+    <section id="home" class="page active">
+
+        <div class="hero">
+
+            <h1>Create. Share. Play.</h1>
+
+            <p>
+                Make your own quizzes and share them with anyone.
+            </p>
+
+            <div class="hero-buttons">
+
+                <button class="primary" onclick="showPage('create')">
+                    ➕ Create Quiz
+                </button>
+
+                <button class="secondary" onclick="showPage('play')">
+                    ▶ Play Quiz
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>📂 Import a Quiz</h2>
+
+            <p>
+                Load a <strong>.qz</strong> quiz file from your device.
+            </p>
+
+            <input
+                type="file"
+                id="importFile"
+                accept=".qz,.json"
+                onchange="importQuiz(event)"
+            >
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>💾 Saved Quiz</h2>
+
+            <div id="savedQuiz">
+                No quiz saved yet.
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- CREATE -->
+
+    <section id="create" class="page">
+
+        <div class="card">
+
+            <h1>📝 Quiz Creator</h1>
+
+            <label>Quiz Title</label>
+
+            <input
+                id="quizTitle"
+                type="text"
+                placeholder="My Awesome Quiz"
+            >
+
+
+            <label>Description</label>
+
+            <textarea
+                id="quizDescription"
+                placeholder="Test your knowledge!"
+            ></textarea>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>Questions</h2>
+
+            <div id="questionList"></div>
+
+            <button class="add-question" onclick="addQuestion()">
+                ➕ Add Question
+            </button>
+
+        </div>
+
+
+        <div class="creator-actions">
+
+            <button class="primary" onclick="saveQuiz()">
+                💾 Save Quiz
+            </button>
+
+            <button class="secondary" onclick="exportQuiz()">
+                📤 Export .qz
+            </button>
+
+            <button class="secondary" onclick="shareQuiz()">
+                🔗 Share
+            </button>
+
+            <button class="primary" onclick="startQuiz()">
+                ▶ Play Quiz
+            </button>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- PLAY -->
+
+    <section id="play" class="page">
+
+        <div id="playArea">
+
+            <div class="card">
+
+                <h1>🎮 Quiz Player</h1>
+
+                <p>
+                    Import a quiz or create one first.
+                </p>
+
+                <button
+                    class="primary"
+                    onclick="showPage('create')"
+                >
+                    Create Quiz
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer>
+    <p>QuizForge • Made for GitHub Pages</p>
+</footer>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
