@@ -324,6 +324,10 @@
         <button onclick="showPage('settings')">
             ⚙️ Settings
         </button>
+        
+        <button onclick="openRewards()">
+           🪙 Rewards
+        </button>
 
         <button
             id="loginButton"
@@ -342,6 +346,55 @@
 ===================================================== -->
 
 <main>
+    <section
+    id="rewards"
+    class="page"
+>
+
+    <div class="card">
+
+        <h1>
+            🪙 Rewards & Profile
+        </h1>
+
+        <p>
+            Earn coins, unlock badges and
+            collect awesome skins!
+        </p>
+
+    </div>
+
+
+    <div id="economyProfile">
+
+        <div class="card">
+
+            Loading profile...
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <h1>
+            🎨 Skin Shop
+        </h1>
+
+        <p>
+            Spend your coins to unlock skins.
+        </p>
+
+        <div id="skinShop">
+
+            Loading skins...
+
+        </div>
+
+    </div>
+
+</section>
 
 
 <!-- =====================================================
@@ -1489,3 +1542,4 @@
 
 </body>
 </html>
+<script src="economy.js"></script>
