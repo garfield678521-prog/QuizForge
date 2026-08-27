@@ -1,197 +1,328 @@
 /* =========================================================
    QUIZFORGE ECONOMY
-   Coins / Skins / Badges / Rewards
+   COINS • BADGES • SKINS • PROFILE
 ========================================================= */
 
 const Economy = {
 
+    profile: null,
 
-    skins: [
+    skins: [],
 
-        {
-            id: "default",
-            name: "Default",
-            icon: "😀",
-            price: 0
-        },
 
-        {
-            id: "creeper",
-            name: "Creeper",
-            icon: "🟩",
-            price: 250
-        },
+    /* =====================================================
+       SUPABASE
+    ===================================================== */
 
-        {
-            id: "diamond",
-            name: "Diamond",
-            icon: "💎",
-            price: 500
-        },
+    getClient() {
 
-        {
-            id: "nether",
-            name: "Nether",
-            icon: "🔥",
-            price: 750
-        },
+        return window.supabaseClient;
 
-        {
-            id: "ender",
-            name: "Ender",
-            icon: "🟪",
-            price: 1000
-        },
+    },
 
-        {
-            id: "gold",
-            name: "Golden",
-            icon: "👑",
-            price: 1500
-        },
 
-        {
-            id: "robot",
-            name: "Robot",
-            icon: "🤖",
-            price: 2000
-        },
+    /* =====================================================
+       GET USER
+    ===================================================== */
 
-        {
-            id: "galaxy",
-            name: "Galaxy",
-            icon: "🌌",
-            price: 3000
+    async getUser() {
+
+        const supabase =
+            this.getClient();
+
+        if (!supabase) {
+            return null;
         }
 
-    ],
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .auth
+                .getUser();
 
+        if (error) {
 
-    badges: [
-
-        {
-            id: "first-quiz",
-            name: "First Quiz",
-            icon: "🎯",
-            description:
-                "Complete your first quiz."
-        },
-
-        {
-            id: "perfect",
-            name: "Perfect Score",
-            icon: "💯",
-            description:
-                "Get every question correct."
-        },
-
-        {
-            id: "creator",
-            name: "Quiz Creator",
-            icon: "✏️",
-            description:
-                "Create your first quiz."
-        },
-
-        {
-            id: "publisher",
-            name: "Publisher",
-            icon: "🌎",
-            description:
-                "Publish a quiz to the public library."
-        },
-
-        {
-            id: "popular",
-            name: "Popular Creator",
-            icon: "🔥",
-            description:
-                "Have a quiz played many times."
-        },
-
-        {
-            id: "master",
-            name: "Quiz Master",
-            icon: "🏆",
-            description:
-                "Reach 10,000 total points."
-        }
-
-    ],
-
-
-    getUser() {
-
-        if (
-            typeof Auth === "undefined" ||
-            !Auth.currentUser
-        ) {
+            console.error(error);
 
             return null;
 
         }
 
-        return Auth.currentUser;
+        return data.user;
 
     },
 
 
-    addCoins(
-        amount
-    ) {
+    /* =====================================================
+       LOAD PROFILE
+    ===================================================== */
+
+    async loadProfile() {
+
+        const supabase =
+            this.getClient();
 
         const user =
-            this.getUser();
-
-        if (!user) return 0;
+            await this.getUser();
 
 
-        amount =
-            Math.max(
-                0,
-                Math.floor(
-                    Number(amount) || 0
+        if (!user) {
+
+            this.profile =
+                null;
+
+            return null;
+
+        }
+
+
+        /*
+         * Get profile.
+         */
+
+        let {
+            data: profile,
+            error
+        } =
+            await supabase
+                .from(
+                    "player_profiles"
                 )
-            );
+                .select("*")
+                .eq(
+                    "id",
+                    user.id
+                )
+                .maybeSingle();
 
 
-        Auth.updateUser({
+        /*
+         * If no profile exists,
+         * create one.
+         */
 
-            coins:
-                (user.coins || 0) +
-                amount
+        if (!profile) {
 
-        });
+            const username =
+                user.user_metadata
+                    ?.username ||
+                user.email?.split("@")[0] ||
+                "Player";
 
 
-        this.updateUI();
+            const result =
+                await supabase
+                    .from(
+                        "player_profiles"
+                    )
+                    .insert({
 
-        return amount;
+                        id:
+                            user.id,
+
+                        username:
+                            username
+
+                    })
+                    .select()
+                    .single();
+
+
+            if (result.error) {
+
+                console.error(
+                    result.error
+                );
+
+                return null;
+
+            }
+
+
+            profile =
+                result.data;
+
+        }
+
+
+        if (error) {
+
+            console.error(error);
+
+        }
+
+
+        this.profile =
+            profile;
+
+
+        return profile;
 
     },
 
 
-    removeCoins(
+    /* =====================================================
+       LOAD SKINS
+    ===================================================== */
+
+    async loadSkins() {
+
+        const supabase =
+            this.getClient();
+
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from(
+                    "skin_shop"
+                )
+                .select("*")
+                .order(
+                    "price",
+                    {
+                        ascending: true
+                    }
+                );
+
+
+        if (error) {
+
+            console.error(error);
+
+            return [];
+
+        }
+
+
+        this.skins =
+            data || [];
+
+
+        return this.skins;
+
+    },
+
+
+    /* =====================================================
+       INITIALISE
+    ===================================================== */
+
+    async init() {
+
+        await this.loadProfile();
+
+        await this.loadSkins();
+
+        this.updateCoinDisplay();
+
+    },
+
+
+    /* =====================================================
+       ADD COINS
+    ===================================================== */
+
+    async addCoins(
+        amount,
+        reason = "Reward"
+    ) {
+
+        if (
+            !this.profile ||
+            amount <= 0
+        ) {
+
+            return false;
+
+        }
+
+
+        const supabase =
+            this.getClient();
+
+
+        const newCoins =
+            this.profile.coins +
+            amount;
+
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from(
+                    "player_profiles"
+                )
+                .update({
+
+                    coins:
+                        newCoins,
+
+                    updated_at:
+                        new Date()
+                            .toISOString()
+
+                })
+                .eq(
+                    "id",
+                    this.profile.id
+                )
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(error);
+
+            return false;
+
+        }
+
+
+        this.profile =
+            data;
+
+
+        this.updateCoinDisplay();
+
+
+        console.log(
+            `+${amount} coins: ${reason}`
+        );
+
+
+        return true;
+
+    },
+
+
+    /* =====================================================
+       SPEND COINS
+    ===================================================== */
+
+    async spendCoins(
         amount
     ) {
 
-        const user =
-            this.getUser();
+        if (
+            !this.profile ||
+            amount <= 0
+        ) {
 
-        if (!user) return false;
+            return false;
 
-
-        amount =
-            Math.max(
-                0,
-                Math.floor(
-                    Number(amount) || 0
-                )
-            );
+        }
 
 
         if (
-            user.coins <
+            this.profile.coins <
             amount
         ) {
 
@@ -200,102 +331,214 @@ const Economy = {
         }
 
 
-        Auth.updateUser({
-
-            coins:
-                user.coins -
-                amount
-
-        });
+        const supabase =
+            this.getClient();
 
 
-        this.updateUI();
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from(
+                    "player_profiles"
+                )
+                .update({
+
+                    coins:
+                        this.profile.coins -
+                        amount,
+
+                    updated_at:
+                        new Date()
+                            .toISOString()
+
+                })
+                .eq(
+                    "id",
+                    this.profile.id
+                )
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(error);
+
+            return false;
+
+        }
+
+
+        this.profile =
+            data;
+
+
+        this.updateCoinDisplay();
+
 
         return true;
 
     },
 
 
-    buySkin(
+    /* =====================================================
+       BUY SKIN
+    ===================================================== */
+
+    async buySkin(
         skinID
     ) {
 
-        const user =
-            this.getUser();
-
-
-        if (!user) {
+        if (!this.profile) {
 
             alert(
                 "Please log in first."
             );
 
-            return false;
+            return;
 
         }
 
 
         const skin =
             this.skins.find(
-                item =>
-                    item.id ===
+                s =>
+                    s.id ===
                     skinID
             );
 
 
         if (!skin) {
 
-            return false;
+            alert(
+                "Skin not found."
+            );
+
+            return;
 
         }
 
 
-        const owned =
-            user.skins ||
-            ["default"];
+        const unlocked =
+            Array.isArray(
+                this.profile
+                    .unlocked_skins
+            )
+                ? this.profile
+                    .unlocked_skins
+                : [];
 
 
         if (
-            owned.includes(
+            unlocked.includes(
                 skinID
             )
         ) {
 
-            this.selectSkin(
+            await this.equipSkin(
                 skinID
             );
 
-            return true;
+            return;
 
         }
 
 
         if (
-            !this.removeCoins(
-                skin.price
-            )
+            this.profile.coins <
+            skin.price
         ) {
 
             alert(
-                "🪙 You don't have enough coins!"
+                `You need ${
+                    skin.price -
+                    this.profile.coins
+                } more coins.`
             );
 
-            return false;
+            return;
 
         }
 
 
-        owned.push(
+        const success =
+            await this.spendCoins(
+                skin.price
+            );
+
+
+        if (!success) {
+
+            alert(
+                "Could not purchase skin."
+            );
+
+            return;
+
+        }
+
+
+        unlocked.push(
             skinID
         );
 
 
-        Auth.updateUser({
+        const supabase =
+            this.getClient();
 
-            skins:
-                owned
 
-        });
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from(
+                    "player_profiles"
+                )
+                .update({
+
+                    unlocked_skins:
+                        unlocked,
+
+                    updated_at:
+                        new Date()
+                            .toISOString()
+
+                })
+                .eq(
+                    "id",
+                    this.profile.id
+                )
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(error);
+
+            /*
+             * Try to refund the coins.
+             */
+
+            await this.addCoins(
+                skin.price,
+                "Skin purchase refund"
+            );
+
+            alert(
+                "Purchase failed."
+            );
+
+            return;
+
+        }
+
+
+        this.profile =
+            data;
 
 
         alert(
@@ -303,149 +546,112 @@ const Economy = {
         );
 
 
-        this.renderShop();
+        await this.equipSkin(
+            skinID
+        );
 
-        return true;
+
+        this.renderSkins();
 
     },
 
 
-    selectSkin(
+    /* =====================================================
+       EQUIP SKIN
+    ===================================================== */
+
+    async equipSkin(
         skinID
     ) {
 
-        const user =
-            this.getUser();
+        if (!this.profile) {
+            return;
+        }
 
-        if (!user) return false;
 
-
-        const owned =
-            user.skins ||
-            ["default"];
+        const unlocked =
+            this.profile
+                .unlocked_skins || [];
 
 
         if (
-            !owned.includes(
+            !unlocked.includes(
                 skinID
             )
         ) {
 
-            return false;
+            return;
 
         }
 
 
-        Auth.updateUser({
-
-            selectedSkin:
-                skinID
-
-        });
+        const supabase =
+            this.getClient();
 
 
-        this.renderShop();
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from(
+                    "player_profiles"
+                )
+                .update({
 
-        return true;
+                    equipped_skin:
+                        skinID,
+
+                    updated_at:
+                        new Date()
+                            .toISOString()
+
+                })
+                .eq(
+                    "id",
+                    this.profile.id
+                )
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(error);
+
+            return;
+
+        }
+
+
+        this.profile =
+            data;
+
+
+        this.renderProfile();
 
     },
 
 
-    rewardQuiz(
-        correct,
-        total
-    ) {
+    /* =====================================================
+       BADGES
+    ===================================================== */
 
-        if (!this.getUser()) {
-            return 0;
-        }
-
-
-        correct =
-            Number(correct) || 0;
-
-        total =
-            Number(total) || 0;
-
-
-        let reward =
-            correct * 10;
-
-
-        if (
-            total > 0 &&
-            correct === total
-        ) {
-
-            reward += 50;
-
-            this.unlockBadge(
-                "perfect"
-            );
-
-        }
-
-
-        if (reward > 0) {
-
-            this.addCoins(
-                reward
-            );
-
-        }
-
-
-        const user =
-            this.getUser();
-
-
-        Auth.updateUser({
-
-            quizzesPlayed:
-                (user.quizzesPlayed || 0) + 1,
-
-            totalScore:
-                (user.totalScore || 0) +
-                correct
-
-        });
-
-
-        this.unlockBadge(
-            "first-quiz"
-        );
-
-
-        if (
-            (user.totalScore || 0) >=
-            10000
-        ) {
-
-            this.unlockBadge(
-                "master"
-            );
-
-        }
-
-
-        return reward;
-
-    },
-
-
-    unlockBadge(
+    async awardBadge(
         badgeID
     ) {
 
-        const user =
-            this.getUser();
-
-        if (!user) return false;
+        if (!this.profile) {
+            return false;
+        }
 
 
         const badges =
-            user.badges ||
-            [];
+            Array.isArray(
+                this.profile.badges
+            )
+                ? this.profile.badges
+                : [];
 
 
         if (
@@ -459,34 +665,78 @@ const Economy = {
         }
 
 
-        const badge =
-            this.badges.find(
-                item =>
-                    item.id ===
-                    badgeID
-            );
-
-
-        if (!badge) {
-            return false;
-        }
-
-
         badges.push(
             badgeID
         );
 
 
-        Auth.updateUser({
-
-            badges
-
-        });
+        const supabase =
+            this.getClient();
 
 
-        this.showBadgeNotification(
-            badge
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from(
+                    "player_profiles"
+                )
+                .update({
+
+                    badges:
+                        badges,
+
+                    updated_at:
+                        new Date()
+                            .toISOString()
+
+                })
+                .eq(
+                    "id",
+                    this.profile.id
+                )
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(error);
+
+            return false;
+
+        }
+
+
+        this.profile =
+            data;
+
+
+        const reward =
+            this.getBadgeReward(
+                badgeID
+            );
+
+
+        if (reward > 0) {
+
+            await this.addCoins(
+                reward,
+                `Badge: ${badgeID}`
+            );
+
+        }
+
+
+        alert(
+            `🏅 Badge unlocked!\n\n${this.getBadgeName(
+                badgeID
+            )}`
         );
+
+
+        this.renderProfile();
 
 
         return true;
@@ -494,42 +744,398 @@ const Economy = {
     },
 
 
-    showBadgeNotification(
-        badge
+    /* =====================================================
+       BADGE NAMES
+    ===================================================== */
+
+    getBadgeName(
+        id
     ) {
 
-        alert(
-            `${badge.icon} BADGE UNLOCKED!\n\n` +
-            `${badge.name}\n` +
-            `${badge.description}`
+        const badges = {
+
+            first_quiz:
+                "First Quiz",
+
+            first_win:
+                "First Victory",
+
+            quiz_master:
+                "Quiz Master",
+
+            question_machine:
+                "Question Machine",
+
+            world_challenger:
+                "World Challenger",
+
+            quiz_host:
+                "Quiz Host",
+
+            perfect_score:
+                "Perfect Score",
+
+            coin_collector:
+                "Coin Collector"
+
+        };
+
+
+        return (
+            badges[id] ||
+            id
         );
 
     },
 
 
-    renderShop() {
+    /* =====================================================
+       BADGE REWARDS
+    ===================================================== */
+
+    getBadgeReward(
+        id
+    ) {
+
+        const rewards = {
+
+            first_quiz:
+                100,
+
+            first_win:
+                150,
+
+            quiz_master:
+                500,
+
+            question_machine:
+                250,
+
+            world_challenger:
+                300,
+
+            quiz_host:
+                200,
+
+            perfect_score:
+                250,
+
+            coin_collector:
+                500
+
+        };
+
+
+        return rewards[id] || 0;
+
+    },
+
+
+    /* =====================================================
+       QUIZ CREATED
+    ===================================================== */
+
+    async quizCreated() {
+
+        if (!this.profile) {
+            return;
+        }
+
+
+        const supabase =
+            this.getClient();
+
+
+        const count =
+            this.profile
+                .quizzes_created +
+            1;
+
+
+        const {
+            data
+        } =
+            await supabase
+                .from(
+                    "player_profiles"
+                )
+                .update({
+
+                    quizzes_created:
+                        count
+
+                })
+                .eq(
+                    "id",
+                    this.profile.id
+                )
+                .select()
+                .single();
+
+
+        this.profile =
+            data;
+
+
+        await this.addCoins(
+            50,
+            "Created a quiz"
+        );
+
+
+        if (
+            count === 1
+        ) {
+
+            await this.awardBadge(
+                "first_quiz"
+            );
+
+        }
+
+
+        if (
+            count >= 10
+        ) {
+
+            await this.awardBadge(
+                "quiz_master"
+            );
+
+        }
+
+    },
+
+
+    /* =====================================================
+       QUIZ PLAYED
+    ===================================================== */
+
+    async quizPlayed(
+        correct,
+        totalQuestions
+    ) {
+
+        if (!this.profile) {
+            return;
+        }
+
+
+        const supabase =
+            this.getClient();
+
+
+        const played =
+            this.profile
+                .quizzes_played +
+            1;
+
+
+        const answered =
+            this.profile
+                .questions_answered +
+            1;
+
+
+        const correctCount =
+            this.profile
+                .correct_answers +
+            (
+                correct
+                    ? 1
+                    : 0
+            );
+
+
+        const {
+            data
+        } =
+            await supabase
+                .from(
+                    "player_profiles"
+                )
+                .update({
+
+                    quizzes_played:
+                        played,
+
+                    questions_answered:
+                        answered,
+
+                    correct_answers:
+                        correctCount
+
+                })
+                .eq(
+                    "id",
+                    this.profile.id
+                )
+                .select()
+                .single();
+
+
+        this.profile =
+            data;
+
+
+        await this.addCoins(
+            correct
+                ? 10
+                : 2,
+            correct
+                ? "Correct answer"
+                : "Played quiz"
+        );
+
+
+        if (
+            played === 1
+        ) {
+
+            await this.awardBadge(
+                "first_win"
+            );
+
+        }
+
+
+        if (
+            answered >= 100
+        ) {
+
+            await this.awardBadge(
+                "question_machine"
+            );
+
+        }
+
+    },
+
+
+    /* =====================================================
+       HOSTED QUIZ
+    ===================================================== */
+
+    async quizHosted() {
+
+        if (!this.profile) {
+            return;
+        }
+
+
+        const supabase =
+            this.getClient();
+
+
+        const hosted =
+            this.profile
+                .quizzes_hosted +
+            1;
+
+
+        const {
+            data
+        } =
+            await supabase
+                .from(
+                    "player_profiles"
+                )
+                .update({
+
+                    quizzes_hosted:
+                        hosted
+
+                })
+                .eq(
+                    "id",
+                    this.profile.id
+                )
+                .select()
+                .single();
+
+
+        this.profile =
+            data;
+
+
+        await this.addCoins(
+            25,
+            "Hosted quiz"
+        );
+
+
+        if (
+            hosted === 1
+        ) {
+
+            await this.awardBadge(
+                "quiz_host"
+            );
+
+        }
+
+    },
+
+
+    /* =====================================================
+       COIN DISPLAY
+    ===================================================== */
+
+    updateCoinDisplay() {
+
+        const elements =
+            document.querySelectorAll(
+                "[data-coins]"
+            );
+
+
+        elements.forEach(
+            element => {
+
+                element.textContent =
+                    this.profile
+                        ? this.profile.coins
+                        : "0";
+
+            }
+        );
+
+    },
+
+
+    /* =====================================================
+       PROFILE UI
+    ===================================================== */
+
+    renderProfile() {
 
         const container =
             document.getElementById(
-                "skinShop"
+                "economyProfile"
             );
 
-        if (!container) return;
+
+        if (!container) {
+            return;
+        }
 
 
-        const user =
-            this.getUser();
-
-
-        if (!user) {
+        if (!this.profile) {
 
             container.innerHTML = `
 
                 <div class="card">
 
                     <h2>
-                        🔐 Log in to use the shop
+                        🔐 Login Required
                     </h2>
+
+                    <button
+                        class="primary"
+                        onclick="showPage('login')"
+                    >
+                        Login
+                    </button>
 
                 </div>
 
@@ -540,122 +1146,356 @@ const Economy = {
         }
 
 
-        const owned =
-            user.skins ||
-            ["default"];
+        const skin =
+            this.skins.find(
+                s =>
+                    s.id ===
+                    this.profile
+                        .equipped_skin
+            );
 
 
-        container.innerHTML =
-            this.skins
-                .map(
-                    skin => {
-
-                        const isOwned =
-                            owned.includes(
-                                skin.id
-                            );
-
-                        const selected =
-                            user.selectedSkin ===
-                            skin.id;
+        const badges =
+            this.profile.badges ||
+            [];
 
 
-                        return `
+        container.innerHTML = `
 
-                            <div class="skin-card">
+            <div class="card">
 
-                                <div class="skin-icon">
-                                    ${skin.icon}
-                                </div>
+                <h1>
+                    👤
+                    ${this.escape(
+                        this.profile.username
+                    )}
+                </h1>
 
-                                <h3>
-                                    ${skin.name}
-                                </h3>
 
-                                ${
-                                    selected
-                                        ? `
-                                            <span>
-                                                ✅ Equipped
-                                            </span>
-                                        `
-                                        : isOwned
-                                            ? `
+                <div
+                    style="
+                        font-size:32px;
+                        margin:15px 0;
+                    "
+                >
+                    🪙
+                    ${this.profile.coins}
+                    Coins
+                </div>
+
+
+                <p>
+                    ${
+                        skin?.emoji ||
+                        "🟢"
+                    }
+
+                    Equipped:
+                    <strong>
+                        ${
+                            skin?.name ||
+                            "Classic"
+                        }
+                    </strong>
+                </p>
+
+
+                <p>
+                    🎮 Quizzes Played:
+                    ${this.profile.quizzes_played}
+                </p>
+
+
+                <p>
+                    📝 Quizzes Created:
+                    ${this.profile.quizzes_created}
+                </p>
+
+
+                <p>
+                    🎤 Quizzes Hosted:
+                    ${this.profile.quizzes_hosted}
+                </p>
+
+
+                <p>
+                    ❓ Questions Answered:
+                    ${this.profile.questions_answered}
+                </p>
+
+
+                <p>
+                    ✅ Correct:
+                    ${this.profile.correct_answers}
+                </p>
+
+
+                <h2>
+                    🏅 Badges
+                </h2>
+
+
+                <div>
+
+                    ${
+                        badges.length
+                            ? badges
+                                .map(
+                                    badge => `
+                                        <span
+                                            style="
+                                                display:inline-block;
+                                                padding:10px;
+                                                margin:5px;
+                                                background:#f1f2f6;
+                                                border-radius:10px;
+                                            "
+                                        >
+                                            🏅
+                                            ${this.escape(
+                                                this.getBadgeName(
+                                                    badge
+                                                )
+                                            )}
+                                        </span>
+                                    `
+                                )
+                                .join("")
+                            :
+                                "<p>No badges yet. Start playing!</p>"
+                    }
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        this.updateCoinDisplay();
+
+    },
+
+
+    /* =====================================================
+       SKIN SHOP
+    ===================================================== */
+
+    renderSkins() {
+
+        const container =
+            document.getElementById(
+                "skinShop"
+            );
+
+
+        if (!container) {
+            return;
+        }
+
+
+        if (!this.profile) {
+
+            container.innerHTML =
+                "<p>Login to use the skin shop.</p>";
+
+            return;
+
+        }
+
+
+        const unlocked =
+            this.profile
+                .unlocked_skins ||
+            [];
+
+
+        container.innerHTML = `
+
+            <div class="library-grid">
+
+                ${
+                    this.skins
+                        .map(
+                            skin => {
+
+                                const owned =
+                                    unlocked
+                                        .includes(
+                                            skin.id
+                                        );
+
+
+                                const equipped =
+                                    this.profile
+                                        .equipped_skin ===
+                                    skin.id;
+
+
+                                return `
+
+                                    <div class="card">
+
+                                        <div
+                                            style="
+                                                font-size:55px;
+                                                text-align:center;
+                                            "
+                                        >
+                                            ${
+                                                skin.emoji
+                                            }
+                                        </div>
+
+
+                                        <h2>
+                                            ${this.escape(
+                                                skin.name
+                                            )}
+                                        </h2>
+
+
+                                        <p>
+                                            ${this.escape(
+                                                skin.description
+                                            )}
+                                        </p>
+
+
+                                        <p>
+                                            🪙
+                                            ${
+                                                skin.price
+                                            }
+                                        </p>
+
+
+                                        ${
+                                            equipped
+
+                                                ?
+
+                                            `
                                                 <button
+                                                    disabled
+                                                >
+                                                    ✅ Equipped
+                                                </button>
+                                            `
+
+                                                :
+
+                                            owned
+
+                                                ?
+
+                                            `
+                                                <button
+                                                    class="primary"
                                                     onclick="
-                                                        Economy.selectSkin(
+                                                        Economy.equipSkin(
                                                             '${skin.id}'
                                                         )
                                                     "
                                                 >
-                                                    Equip
+                                                    👕 Equip
                                                 </button>
                                             `
-                                            : `
+
+                                                :
+
+                                            `
                                                 <button
+                                                    class="primary"
                                                     onclick="
                                                         Economy.buySkin(
                                                             '${skin.id}'
                                                         )
                                                     "
                                                 >
-                                                    🪙
-                                                    ${skin.price}
+                                                    🛒 Buy
                                                 </button>
                                             `
-                                }
+                                        }
 
-                            </div>
+                                    </div>
 
-                        `;
+                                `;
 
-                    }
-                )
-                .join("");
+                            }
+                        )
+                        .join("")
+                }
+
+            </div>
+
+        `;
 
     },
 
 
-    updateUI() {
+    /* =====================================================
+       ESCAPE
+    ===================================================== */
 
-        const element =
-            document.getElementById(
-                "coinCount"
-            );
-
-
-        if (element) {
-
-            const user =
-                this.getUser();
-
-            element.textContent =
-                user
-                    ? user.coins || 0
-                    : 0;
-
-        }
-
-    }
-
-};
-
-
-/*
- * Optional global badge object.
- * quiz-player.js can use this.
- */
-
-const Badges = {
-
-    unlock(
-        badgeID
+    escape(
+        text
     ) {
 
-        return Economy.unlockBadge(
-            badgeID
-        );
+        return String(
+            text ?? ""
+        )
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
 
     }
 
 };
+
+
+/* =========================================================
+   GLOBAL FUNCTIONS
+========================================================= */
+
+async function openRewards() {
+
+    showPage(
+        "rewards"
+    );
+
+
+    await Economy.init();
+
+    Economy.renderProfile();
+
+    Economy.renderSkins();
+
+}
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async function() {
+
+        await Economy.init();
+
+    }
+);
