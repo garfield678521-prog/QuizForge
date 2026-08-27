@@ -1,4 +1,3 @@
-# Quizes
 # 🧠 QuizForge
 
 QuizForge is a free browser-based quiz creator and player.
