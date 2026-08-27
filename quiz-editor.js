@@ -1652,3 +1652,9 @@ document.addEventListener(
 
     }
 );
+<button
+    class="primary"
+    onclick="QuizLibrary.saveQuiz(currentQuiz)"
+>
+    💾 Save Quiz
+</button>
