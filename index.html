@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -10,129 +8,340 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <meta
-        name="description"
-        content="QuizForge - Create, share and play quizzes."
-    >
-
     <title>QuizForge</title>
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+    <style>
 
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+            background: #f4f6fb;
+            color: #20232a;
+        }
+
+        header {
+            background: #5865F2;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        nav {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 4px;
+            cursor: pointer;
+            background: #e5e7eb;
+            font-weight: bold;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        button.primary {
+            background: #5865F2;
+            color: white;
+        }
+
+        button.danger {
+            background: #ed4245;
+            color: white;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: auto;
+            padding: 25px 15px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            margin-bottom: 20px;
+            box-shadow:
+                0 3px 15px rgba(0,0,0,0.08);
+        }
+
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .hero p {
+            font-size: 18px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            margin: 7px 0 15px;
+            font-size: 15px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .library-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .library-tabs button.active {
+            background: #5865F2;
+            color: white;
+        }
+
+        .library-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(250px, 1fr));
+            gap: 18px;
+        }
+
+        .quiz-card {
+            margin: 0;
+        }
+
+        .quiz-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 13px;
+            color: #666;
+            margin: 15px 0;
+        }
+
+        .question-card {
+            background: #f7f8fc;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 18px;
+            margin: 15px 0;
+        }
+
+        .answer-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .answer-row input[type="radio"] {
+            width: auto;
+        }
+
+        .editor-top,
+        .question-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .game-code {
+            font-size: 42px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            text-align: center;
+            padding: 25px;
+            background: #f0f1ff;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .players {
+            margin: 15px 0;
+        }
+
+        .player,
+        .leaderboard-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f7f7f7;
+            border-radius: 8px;
+            margin: 7px 0;
+        }
+
+        .answer-options {
+            display: grid;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .answer-options button {
+            width: 100%;
+            padding: 15px;
+            text-align: left;
+            background: white;
+            border: 2px solid #ddd;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .status.success {
+            background: #d1fae5;
+        }
+
+        .status.error {
+            background: #fee2e2;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #777;
+        }
+
+        @media (max-width: 700px) {
+
+            header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            nav {
+                justify-content: center;
+            }
+
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .game-code {
+                font-size: 30px;
+                letter-spacing: 5px;
+            }
+
+        }
+
+    </style>
 </head>
 
 
 <body>
 
+
 <!-- =====================================================
-     TOP NAVIGATION
+     HEADER
 ===================================================== -->
 
-<header class="topbar">
+<header>
 
-    <div
-        class="logo"
-        onclick="showPage('home')"
-    >
-        🧠 QuizForge
-    </div>
+    <h1 onclick="showPage('home')">
+        🎯 QuizForge
+    </h1>
 
+    <nav>
 
-    <nav id="mainNavigation">
-
-        <!-- HOME BUTTON -->
-
-        <button
-            onclick="showPage('home')"
-        >
+        <button onclick="showPage('home')">
             🏠 Home
         </button>
 
-
-        <!-- CREATE -->
-
-        <button
-            onclick="openQuizCreator()"
-        >
+        <button onclick="openCreateQuiz()">
             ➕ Create
         </button>
 
-
-        <!-- LIBRARY -->
-
-        <button
-            onclick="showPage('library')"
-        >
+        <button onclick="openLibrary()">
             📚 Library
         </button>
 
-
-        <!-- PLAY -->
-
-        <button
-            onclick="showPage('play')"
-        >
-            🎮 Play
-        </button>
-
-
-        <!-- MULTIPLAYER -->
-
-        <button
-            onclick="showPage('multiplayer')"
-        >
+        <button onclick="openMultiplayer()">
             👥 Multiplayer
         </button>
 
-
-        <!-- REWARDS -->
-
-        <button
-            onclick="showPage('rewards')"
-        >
-            🪙 Rewards
+        <button onclick="showPage('settings')">
+            ⚙️ Settings
         </button>
-
-    </nav>
-
-
-    <!-- ACCOUNT -->
-
-    <div class="account-area">
-
-        <span id="accountUsername">
-            Guest
-        </span>
-
-        <span>
-            🪙
-            <span id="coinCount">
-                0
-            </span>
-        </span>
 
         <button
             id="loginButton"
-            onclick="openAccountPage()"
+            onclick="showPage('login')"
         >
             🔐 Login
         </button>
 
-    </div>
+    </nav>
 
 </header>
 
 
-
 <!-- =====================================================
-     MAIN APP
+     MAIN
 ===================================================== -->
 
-<main id="app">
-
+<main>
 
 
 <!-- =====================================================
@@ -140,48 +349,37 @@
 ===================================================== -->
 
 <section
-    id="page-home"
+    id="home"
     class="page active"
 >
 
-    <div class="hero">
+    <div class="card hero">
 
         <h1>
-            🧠 QuizForge
+            🎯 QuizForge
         </h1>
 
-
-        <h2>
-            Create. Share. Play. Compete.
-        </h2>
-
-
         <p>
-            Create quizzes, share them with
-            the world and compete with other
-            players.
+            Create, share and play quizzes!
         </p>
 
-
-        <div class="hero-buttons">
+        <div>
 
             <button
                 class="primary"
-                onclick="openQuizCreator()"
+                onclick="openCreateQuiz()"
             >
-                ➕ Create a Quiz
+                ➕ Create Quiz
             </button>
 
-
             <button
-                onclick="showPage('library')"
+                onclick="openLibrary()"
             >
-                📚 Browse Library
+                📚 Quiz Library
             </button>
 
-
             <button
-                onclick="showPage('multiplayer')"
+                onclick="openMultiplayer()"
             >
                 👥 Multiplayer
             </button>
@@ -191,138 +389,21 @@
     </div>
 
 
+    <div class="card">
 
-    <div class="feature-grid">
+        <h2>
+            🚀 QuizForge
+        </h2>
 
-
-        <div class="card">
-
-            <h2>
-                ✏️ Create
-            </h2>
-
-            <p>
-                Make your own quizzes with
-                custom questions.
-            </p>
-
-            <button
-                onclick="openQuizCreator()"
-            >
-                Create
-            </button>
-
-        </div>
-
-
-
-        <div class="card">
-
-            <h2>
-                📥 Import
-            </h2>
-
-            <p>
-                Import your QuizForge
-                <strong>.qz</strong> files.
-            </p>
-
-            <button
-                onclick="openImportFile()"
-            >
-                📥 Import .qz
-            </button>
-
-        </div>
-
-
-
-        <div class="card">
-
-            <h2>
-                📤 Export
-            </h2>
-
-            <p>
-                Export your quizzes as
-                <strong>.qz</strong> files.
-            </p>
-
-            <button
-                onclick="exportCurrentQuiz()"
-            >
-                📤 Export .qz
-            </button>
-
-        </div>
-
-
-
-        <div class="card">
-
-            <h2>
-                🌎 Library
-            </h2>
-
-            <p>
-                Find quizzes made by
-                players around the world.
-            </p>
-
-            <button
-                onclick="showPage('library')"
-            >
-                📚 Open Library
-            </button>
-
-        </div>
-
-
-
-        <div class="card">
-
-            <h2>
-                👥 Multiplayer
-            </h2>
-
-            <p>
-                Host quizzes and play
-                with multiple players.
-            </p>
-
-            <button
-                onclick="showPage('multiplayer')"
-            >
-                🎮 Play Multiplayer
-            </button>
-
-        </div>
-
-
-
-        <div class="card">
-
-            <h2>
-                🏆 Rewards
-            </h2>
-
-            <p>
-                Earn coins, unlock skins
-                and collect badges.
-            </p>
-
-            <button
-                onclick="showPage('rewards')"
-            >
-                🪙 Rewards
-            </button>
-
-        </div>
+        <p>
+            Make your own quizzes, challenge
+            friends and discover quizzes from
+            around the world.
+        </p>
 
     </div>
 
 </section>
-
 
 
 <!-- =====================================================
@@ -330,95 +411,62 @@
 ===================================================== -->
 
 <section
-    id="page-login"
+    id="login"
     class="page"
 >
 
-    <div class="auth-container">
+    <div class="card">
 
-        <div class="auth-card">
+        <h2>
+            🔐 Login
+        </h2>
 
-            <h1>
-                🔐 Login
-            </h1>
+        <div id="loginMessage"></div>
 
+        <label>
+            Email
+        </label>
 
-            <p>
-                Login to your QuizForge account.
-            </p>
+        <input
+            id="loginEmail"
+            type="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+        >
 
+        <label>
+            Password
+        </label>
 
-            <form
-                onsubmit="handleLogin(event)"
-            >
+        <input
+            id="loginPassword"
+            type="password"
+            placeholder="Password"
+            autocomplete="current-password"
+        >
 
-                <label>
-                    Email
-                </label>
+        <button
+            class="primary"
+            onclick="loginUser()"
+        >
+            Login
+        </button>
 
-                <input
-                    id="loginEmail"
-                    type="email"
-                    placeholder="you@example.com"
-                    autocomplete="email"
-                    required
-                >
+        <button
+            onclick="showPage('signup')"
+        >
+            Create Account
+        </button>
 
-
-                <label>
-                    Password
-                </label>
-
-                <input
-                    id="loginPassword"
-                    type="password"
-                    placeholder="Password"
-                    autocomplete="current-password"
-                    required
-                >
-
-
-                <div
-                    id="loginMessage"
-                    class="auth-message"
-                ></div>
-
-
-                <button
-                    type="submit"
-                    class="primary full-width"
-                >
-                    🔐 Login
-                </button>
-
-            </form>
-
-
-            <button
-                class="link-button"
-                onclick="showPage('forgot-password')"
-            >
-                Forgot password?
-            </button>
-
-
-            <p>
-                Don't have an account?
-            </p>
-
-
-            <button
-                onclick="showPage('signup')"
-            >
-                📝 Sign Up
-            </button>
-
-        </div>
+        <button
+            onclick="resetPassword()"
+        >
+            Forgot Password?
+        </button>
 
     </div>
 
 </section>
-
 
 
 <!-- =====================================================
@@ -426,537 +474,88 @@
 ===================================================== -->
 
 <section
-    id="page-signup"
+    id="signup"
     class="page"
 >
 
-    <div class="auth-container">
-
-        <div class="auth-card">
-
-            <h1>
-                📝 Sign Up
-            </h1>
-
-
-            <p>
-                Create your QuizForge account.
-            </p>
-
-
-            <form
-                onsubmit="handleSignup(event)"
-            >
-
-                <label>
-                    Username
-                </label>
-
-                <input
-                    id="signupUsername"
-                    type="text"
-                    placeholder="Username"
-                    minlength="2"
-                    maxlength="30"
-                    required
-                >
-
-
-                <label>
-                    Email
-                </label>
-
-                <input
-                    id="signupEmail"
-                    type="email"
-                    placeholder="you@example.com"
-                    autocomplete="email"
-                    required
-                >
-
-
-                <label>
-                    Password
-                </label>
-
-                <input
-                    id="signupPassword"
-                    type="password"
-                    placeholder="At least 6 characters"
-                    minlength="6"
-                    autocomplete="new-password"
-                    required
-                >
-
-
-                <label>
-                    Confirm Password
-                </label>
-
-                <input
-                    id="signupConfirmPassword"
-                    type="password"
-                    placeholder="Confirm password"
-                    minlength="6"
-                    autocomplete="new-password"
-                    required
-                >
-
-
-                <div
-                    id="signupMessage"
-                    class="auth-message"
-                ></div>
-
-
-                <button
-                    type="submit"
-                    class="primary full-width"
-                >
-                    🚀 Create Account
-                </button>
-
-            </form>
-
-
-            <button
-                onclick="showPage('login')"
-            >
-                ← Back to Login
-            </button>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<!-- =====================================================
-     VERIFY EMAIL
-===================================================== -->
-
-<section
-    id="page-verify"
-    class="page"
->
-
-    <div class="auth-container">
-
-        <div class="auth-card">
-
-            <h1>
-                📧 Verify Your Email
-            </h1>
-
-
-            <p>
-                We've sent a verification email
-                to your email address.
-            </p>
-
-
-            <p>
-                Open the email and click the
-                verification link.
-            </p>
-
-
-            <button
-                onclick="showPage('login')"
-            >
-                🔐 Back to Login
-            </button>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<!-- =====================================================
-     FORGOT PASSWORD
-===================================================== -->
-
-<section
-    id="page-forgot-password"
-    class="page"
->
-
-    <div class="auth-container">
-
-        <div class="auth-card">
-
-            <h1>
-                🔑 Reset Password
-            </h1>
-
-
-            <p>
-                Enter your email address and
-                we'll send you a reset link.
-            </p>
-
-
-            <form
-                onsubmit="handlePasswordReset(event)"
-            >
-
-                <label>
-                    Email
-                </label>
-
-                <input
-                    id="resetEmail"
-                    type="email"
-                    placeholder="you@example.com"
-                    required
-                >
-
-
-                <div
-                    id="resetMessage"
-                    class="auth-message"
-                ></div>
-
-
-                <button
-                    type="submit"
-                    class="primary full-width"
-                >
-                    📧 Send Reset Email
-                </button>
-
-            </form>
-
-
-            <button
-                onclick="showPage('login')"
-            >
-                ← Back to Login
-            </button>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<!-- =====================================================
-     ACCOUNT
-===================================================== -->
-
-<section
-    id="page-account"
-    class="page"
->
-
-    <div class="page-header">
-
-        <h1>
-            👤 My Account
-        </h1>
-
-
-        <!-- HOME BUTTON -->
+    <div class="card">
+
+        <h2>
+            📝 Create Account
+        </h2>
+
+        <div id="signupMessage"></div>
+
+        <label>
+            Username
+        </label>
+
+        <input
+            id="signupUsername"
+            type="text"
+            placeholder="Choose a username"
+        >
+
+        <label>
+            Email
+        </label>
+
+        <input
+            id="signupEmail"
+            type="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+        >
+
+        <label>
+            Password
+        </label>
+
+        <input
+            id="signupPassword"
+            type="password"
+            placeholder="At least 6 characters"
+            autocomplete="new-password"
+        >
 
         <button
-            onclick="showPage('home')"
+            class="primary"
+            onclick="signupUser()"
         >
-            🏠 Home
+            Sign Up
+        </button>
+
+        <button
+            onclick="showPage('login')"
+        >
+            Already have an account?
         </button>
 
     </div>
 
-
-    <div class="card">
-
-        <h2>
-            👤 Profile
-        </h2>
-
-
-        <p>
-            Username:
-            <strong id="accountPageUsername">
-                Guest
-            </strong>
-        </p>
-
-
-        <p>
-            Coins:
-            <strong id="accountPageCoins">
-                0
-            </strong>
-        </p>
-
-    </div>
-
-
-
-    <div class="card">
-
-        <h2>
-            📊 Statistics
-        </h2>
-
-
-        <div class="stats-grid">
-
-            <div>
-
-                <strong id="statQuizzesCreated">
-                    0
-                </strong>
-
-                <span>
-                    Quizzes Created
-                </span>
-
-            </div>
-
-
-            <div>
-
-                <strong id="statQuizzesPlayed">
-                    0
-                </strong>
-
-                <span>
-                    Quizzes Played
-                </span>
-
-            </div>
-
-
-            <div>
-
-                <strong id="statTotalScore">
-                    0
-                </strong>
-
-                <span>
-                    Total Score
-                </span>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <button
-        onclick="showPage('settings')"
-    >
-        ⚙️ Settings
-    </button>
-
-
-    <button
-        class="danger"
-        onclick="Auth.logout()"
-    >
-        🚪 Logout
-    </button>
-
 </section>
 
 
-
 <!-- =====================================================
-     SETTINGS
+     CREATE / EDIT
 ===================================================== -->
 
 <section
-    id="page-settings"
+    id="create"
     class="page"
 >
 
-    <div class="page-header">
-
-        <h1>
-            ⚙️ Settings
-        </h1>
-
-
-        <button
-            onclick="showPage('home')"
-        >
-            🏠 Home
-        </button>
-
-    </div>
-
-
-    <div class="card">
-
-        <h2>
-            👤 Account
-        </h2>
-
-
-        <p>
-            Username:
-            <strong id="settingsUsername">
-                Guest
-            </strong>
-        </p>
-
-
-        <p>
-            Email:
-            <strong id="settingsEmail">
-                -
-            </strong>
-        </p>
-
-    </div>
-
-
-
-    <div class="card">
-
-        <h2>
-            🔑 Change Password
-        </h2>
-
-
-        <form
-            id="changePasswordForm"
-            onsubmit="handlePasswordChange(event)"
-        >
-
-            <label>
-                New Password
-            </label>
-
-            <input
-                id="newPassword"
-                type="password"
-                minlength="6"
-                autocomplete="new-password"
-                placeholder="New password"
-                required
-            >
-
-
-            <label>
-                Confirm New Password
-            </label>
-
-            <input
-                id="confirmPassword"
-                type="password"
-                minlength="6"
-                autocomplete="new-password"
-                placeholder="Confirm password"
-                required
-            >
-
-
-            <div
-                id="passwordMessage"
-                class="auth-message"
-            ></div>
-
-
-            <button
-                type="submit"
-                class="primary"
-            >
-                🔒 Change Password
-            </button>
-
-        </form>
-
-    </div>
-
-
-    <button
-        onclick="showPage('account')"
-    >
-        ← Back to Account
-    </button>
-
-</section>
-
-
-
-<!-- =====================================================
-     CREATE
-===================================================== -->
-
-<section
-    id="page-create"
-    class="page"
->
-
-    <div class="page-header">
-
-        <div>
-
-            <h1>
-                ✏️ Quiz Creator
-            </h1>
-
-            <p>
-                Start with a completely blank quiz.
-            </p>
-
-        </div>
-
-
-        <div>
-
-            <button
-                onclick="showPage('home')"
-            >
-                🏠 Home
-            </button>
-
-
-            <button
-                onclick="openImportFile()"
-            >
-                📥 Import .qz
-            </button>
-
-
-            <button
-                onclick="exportCurrentQuiz()"
-            >
-                📤 Export .qz
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <div
-        id="quizEditor"
-        class="quiz-editor"
-    >
+    <div id="quizEditor">
 
         <div class="card">
 
             <h2>
-                🆕 New Blank Quiz
+                🆕 Create Quiz
             </h2>
 
-
             <p>
-                Press the button below to start
-                a brand-new quiz.
+                Start with a blank quiz.
             </p>
-
 
             <button
                 class="primary"
@@ -965,7 +564,6 @@
                 ➕ Create Blank Quiz
             </button>
 
-
             <button
                 onclick="openImportFile()"
             >
@@ -979,189 +577,60 @@
 </section>
 
 
-
-<!-- =====================================================
-     IMPORT
-===================================================== -->
-
-<section
-    id="page-import"
-    class="page"
->
-
-    <div class="page-header">
-
-        <h1>
-            📥 Import Quiz
-        </h1>
-
-
-        <button
-            onclick="showPage('home')"
-        >
-            🏠 Home
-        </button>
-
-    </div>
-
-
-    <div class="card">
-
-        <h2>
-            📥 Import a .qz file
-        </h2>
-
-
-        <p>
-            Select a QuizForge .qz file
-            from your device.
-        </p>
-
-
-        <input
-            id="quizFileInput"
-            type="file"
-            accept=".qz,application/json"
-            onchange="importQuizFile(event)"
-        >
-
-    </div>
-
-</section>
-
-
-
 <!-- =====================================================
      LIBRARY
 ===================================================== -->
 
 <section
-    id="page-library"
+    id="library"
     class="page"
 >
 
-    <div class="page-header">
-
-        <div>
-
-            <h1>
-                📚 Quiz Library
-            </h1>
-
-
-            <p>
-                Discover quizzes from players
-                around the world.
-            </p>
-
-        </div>
-
-
-        <button
-            onclick="showPage('home')"
-        >
-            🏠 Home
-        </button>
-
-    </div>
-
-
-    <div class="library-tabs">
-
-        <button
-            onclick="loadPublicLibrary()"
-        >
-            🌎 Public Library
-        </button>
-
-
-        <button
-            onclick="loadMyQuizzes()"
-        >
-            👤 My Quizzes
-        </button>
-
-    </div>
-
-
-    <div
-        id="quizLibrary"
-        class="quiz-library"
-    >
-
-        <div class="card">
-
-            <h2>
-                🌎 Public Library
-            </h2>
-
-
-            <p>
-                Loading quizzes...
-            </p>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<!-- =====================================================
-     PLAY
-===================================================== -->
-
-<section
-    id="page-play"
-    class="page"
->
-
-    <div class="page-header">
+    <div class="card">
 
         <h1>
-            🎮 Play Quiz
+            📚 Quiz Library
         </h1>
 
-
-        <button
-            onclick="showPage('home')"
-        >
-            🏠 Home
-        </button>
-
-    </div>
-
-
-    <div
-        id="quizPlayer"
-        class="quiz-player"
-    >
-
-        <div class="card">
-
-            <h2>
-                🎮 Ready to Play?
-            </h2>
-
-
-            <p>
-                Select a quiz from the library.
-            </p>
-
+        <div class="library-tabs">
 
             <button
-                onclick="showPage('library')"
+                id="myQuizzesTab"
+                class="active"
+                onclick="
+                    QuizLibrary.showMyQuizzes()
+                "
             >
-                📚 Browse Library
+                👤 My Quizzes
+            </button>
+
+            <button
+                id="publicLibraryTab"
+                onclick="
+                    QuizLibrary.showPublicLibrary()
+                "
+            >
+                🌎 Public Library
             </button>
 
         </div>
 
     </div>
 
-</section>
 
+    <div id="quizLibrary">
+
+        <div class="card">
+
+            <p>
+                Loading your quizzes...
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
 
 
 <!-- =====================================================
@@ -1169,78 +638,59 @@
 ===================================================== -->
 
 <section
-    id="page-multiplayer"
+    id="multiplayer"
     class="page"
 >
 
-    <div class="page-header">
+    <div
+        id="multiplayerGame"
+    >
 
-        <div>
+        <div class="card">
 
             <h1>
                 👥 Multiplayer
             </h1>
 
-
             <p>
-                Host or join a QuizForge game.
+                Host a quiz or join a game.
             </p>
-
-        </div>
-
-
-        <button
-            onclick="showPage('home')"
-        >
-            🏠 Home
-        </button>
-
-    </div>
-
-
-    <div class="multiplayer-grid">
-
-
-        <div class="card">
-
-            <h2>
-                🎤 Host Game
-            </h2>
-
-
-            <p>
-                Host a quiz and invite players.
-            </p>
-
 
             <button
                 class="primary"
-                onclick="hostQuiz()"
+                onclick="Multiplayer.hostQuiz()"
             >
-                🎮 Host Game
+                🎤 Host Quiz
             </button>
 
-        </div>
-
-
-
-        <div class="card">
+            <hr>
 
             <h2>
-                🚪 Join Game
+                Join a Game
             </h2>
-
 
             <input
                 id="joinGameCode"
                 type="text"
-                placeholder="Game code"
-                maxlength="12"
+                maxlength="6"
+                placeholder="Enter 6-character code"
+                style="
+                    text-transform: uppercase;
+                    text-align: center;
+                    font-size: 22px;
+                    letter-spacing: 4px;
+                "
             >
 
-
             <button
-                onclick="joinQuiz()"
+                class="primary"
+                onclick="
+                    Multiplayer.joinQuiz(
+                        document.getElementById(
+                            'joinGameCode'
+                        ).value
+                    )
+                "
             >
                 🚀 Join Game
             </button>
@@ -1249,85 +699,52 @@
 
     </div>
 
-
-    <div
-        id="multiplayerGame"
-    ></div>
-
 </section>
 
 
-
 <!-- =====================================================
-     RESULTS
+     SETTINGS
 ===================================================== -->
 
 <section
-    id="page-results"
+    id="settings"
     class="page"
 >
 
-    <div class="page-header">
+    <div class="card">
 
         <h1>
-            🏆 Results
+            ⚙️ Settings
         </h1>
 
-
-        <button
-            onclick="showPage('home')"
-        >
-            🏠 Home
-        </button>
-
-    </div>
-
-
-    <div
-        id="quizResults"
-        class="quiz-results"
-    >
-
-        <div class="card">
-
-            <h2>
-                🏆 Quiz Results
-            </h2>
-
+        <div id="accountInfo">
 
             <p>
-                Results will appear here
-                after playing.
+                Not logged in.
             </p>
 
         </div>
 
     </div>
 
-</section>
 
+    <div class="card">
 
+        <h2>
+            🔑 Change Password
+        </h2>
 
-<!-- =====================================================
-     REWARDS
-===================================================== -->
-
-<section
-    id="page-rewards"
-    class="page"
->
-
-    <div class="page-header">
-
-        <h1>
-            🪙 Rewards
-        </h1>
-
+        <input
+            id="newPassword"
+            type="password"
+            placeholder="New password"
+        >
 
         <button
-            onclick="showPage('home')"
+            class="primary"
+            onclick="changePassword()"
         >
-            🏠 Home
+            Change Password
         </button>
 
     </div>
@@ -1336,114 +753,22 @@
     <div class="card">
 
         <h2>
-            🪙 Coins
+            🚪 Account
         </h2>
-
-
-        <p>
-            You have
-            <strong id="accountCoins">
-                0
-            </strong>
-            coins.
-        </p>
-
-    </div>
-
-
-
-    <div class="card">
-
-        <h2>
-            🎨 Skins
-        </h2>
-
-
-        <div
-            id="skinShop"
-            class="skin-grid"
-        >
-
-            <p>
-                Loading skins...
-            </p>
-
-        </div>
-
-    </div>
-
-
-
-    <div class="card">
-
-        <h2>
-            🏅 Badges
-        </h2>
-
-
-        <div
-            id="badgeCollection"
-            class="badge-grid"
-        >
-
-            <p>
-                Loading badges...
-            </p>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<!-- =====================================================
-     ADMIN
-===================================================== -->
-
-<section
-    id="page-admin"
-    class="page"
->
-
-    <div class="page-header">
-
-        <h1>
-            👑 Admin Panel
-        </h1>
-
 
         <button
-            onclick="showPage('home')"
+            class="danger"
+            onclick="logoutUser()"
         >
-            🏠 Home
+            Logout
         </button>
 
     </div>
 
-
-    <div
-        id="adminPanel"
-        class="admin-panel"
-    >
-
-        <div class="card">
-
-            <h2>
-                🔒 Checking permissions...
-            </h2>
-
-        </div>
-
-    </div>
-
 </section>
-
 
 
 </main>
-
 
 
 <!-- =====================================================
@@ -1452,36 +777,9 @@
 
 <footer>
 
-    <h3>
-        🧠 QuizForge
-    </h3>
-
-
-    <p>
-        Create • Share • Play • Compete
-    </p>
-
-
-    <p>
-        © 2026 QuizForge
-    </p>
+    QuizForge © 2026
 
 </footer>
-
-
-
-<!-- =====================================================
-     HIDDEN FILE INPUT
-===================================================== -->
-
-<input
-    id="hiddenQuizFileInput"
-    type="file"
-    accept=".qz,application/json"
-    hidden
-    onchange="importQuizFile(event)"
->
-
 
 
 <!-- =====================================================
@@ -1490,6 +788,642 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+
+<script>
+
+    /*
+     * =====================================================
+     * SUPABASE CONFIG
+     * =====================================================
+     *
+     * Replace the two values below with your Supabase
+     * project URL and publishable key.
+     *
+     * NEVER put a service_role/secret key here.
+     */
+
+    const SUPABASE_URL =
+        "https://hlnrnnolzlvkwuilwfky.supabase.co";
+
+    const SUPABASE_KEY =
+        "sb_publishable_POI4OqPx3GIX59rMfct_oA_JuWdss3v";
+
+
+    window.supabaseClient =
+        window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+
+</script>
+
+
+<!-- =====================================================
+     PAGE SYSTEM
+===================================================== -->
+
+<script>
+
+    function showPage(
+        pageID
+    ) {
+
+        document
+            .querySelectorAll(".page")
+            .forEach(
+                page => {
+                    page.classList.remove(
+                        "active"
+                    );
+                }
+            );
+
+
+        const page =
+            document.getElementById(
+                pageID
+            );
+
+
+        if (!page) {
+            return;
+        }
+
+
+        page.classList.add(
+            "active"
+        );
+
+
+        window.scrollTo(
+            0,
+            0
+        );
+
+
+        /*
+         * Library always defaults
+         * to My Quizzes.
+         */
+
+        if (
+            pageID === "library" &&
+            window.QuizLibrary
+        ) {
+
+            QuizLibrary.showMyQuizzes();
+
+        }
+
+    }
+
+
+    function openLibrary() {
+
+        showPage(
+            "library"
+        );
+
+        if (
+            window.QuizLibrary
+        ) {
+
+            QuizLibrary.showMyQuizzes();
+
+        }
+
+    }
+
+
+    function openCreateQuiz() {
+
+        showPage(
+            "create"
+        );
+
+
+        /*
+         * IMPORTANT:
+         * Create ALWAYS starts blank.
+         */
+
+        if (
+            typeof createNewQuiz ===
+            "function"
+        ) {
+
+            createNewQuiz();
+
+        }
+
+    }
+
+
+    function openMultiplayer() {
+
+        showPage(
+            "multiplayer"
+        );
+
+    }
+
+</script>
+
+
+<!-- =====================================================
+     AUTH
+===================================================== -->
+
+<script>
+
+    async function signupUser() {
+
+        const username =
+            document.getElementById(
+                "signupUsername"
+            ).value.trim();
+
+
+        const email =
+            document.getElementById(
+                "signupEmail"
+            ).value.trim();
+
+
+        const password =
+            document.getElementById(
+                "signupPassword"
+            ).value;
+
+
+        const message =
+            document.getElementById(
+                "signupMessage"
+            );
+
+
+        if (!username) {
+
+            message.innerHTML =
+                '<div class="status error">Enter a username.</div>';
+
+            return;
+
+        }
+
+
+        if (!email) {
+
+            message.innerHTML =
+                '<div class="status error">Enter a valid email.</div>';
+
+            return;
+
+        }
+
+
+        if (
+            password.length < 6
+        ) {
+
+            message.innerHTML =
+                '<div class="status error">Password must be at least 6 characters.</div>';
+
+            return;
+
+        }
+
+
+        const {
+            data,
+            error
+        } =
+            await window.supabaseClient
+                .auth
+                .signUp({
+
+                    email:
+                        email,
+
+                    password:
+                        password,
+
+                    options: {
+
+                        data: {
+                            username:
+                                username
+                        }
+
+                    }
+
+                });
+
+
+        if (error) {
+
+            message.innerHTML =
+                `<div class="status error">
+                    ${escapeHTML(
+                        error.message
+                    )}
+                </div>`;
+
+            return;
+
+        }
+
+
+        message.innerHTML =
+            `
+            <div class="status success">
+                ✅ Account created!
+                Check your email for the
+                verification link.
+            </div>
+            `;
+
+    }
+
+
+    async function loginUser() {
+
+        const email =
+            document.getElementById(
+                "loginEmail"
+            ).value.trim();
+
+
+        const password =
+            document.getElementById(
+                "loginPassword"
+            ).value;
+
+
+        const message =
+            document.getElementById(
+                "loginMessage"
+            );
+
+
+        if (!email) {
+
+            message.innerHTML =
+                '<div class="status error">Enter your email.</div>';
+
+            return;
+
+        }
+
+
+        if (!password) {
+
+            message.innerHTML =
+                '<div class="status error">Enter your password.</div>';
+
+            return;
+
+        }
+
+
+        const {
+            data,
+            error
+        } =
+            await window.supabaseClient
+                .auth
+                .signInWithPassword({
+
+                    email:
+                        email,
+
+                    password:
+                        password
+
+                });
+
+
+        if (error) {
+
+            message.innerHTML =
+                `<div class="status error">
+                    ${escapeHTML(
+                        error.message
+                    )}
+                </div>`;
+
+            return;
+
+        }
+
+
+        message.innerHTML =
+            `
+            <div class="status success">
+                ✅ Login successful!
+            </div>
+            `;
+
+
+        updateAccountUI();
+
+
+        setTimeout(
+            () => {
+                showPage("home");
+            },
+            500
+        );
+
+    }
+
+
+    async function logoutUser() {
+
+        await window.supabaseClient
+            .auth
+            .signOut();
+
+
+        /*
+         * Reset editor data when logging out.
+         */
+
+        if (
+            typeof currentQuiz !==
+            "undefined"
+        ) {
+
+            currentQuiz =
+                null;
+
+        }
+
+
+        localStorage.removeItem(
+            "quizforge_current_quiz"
+        );
+
+
+        showPage(
+            "home"
+        );
+
+
+        updateAccountUI();
+
+    }
+
+
+    async function resetPassword() {
+
+        const email =
+            document.getElementById(
+                "loginEmail"
+            ).value.trim();
+
+
+        if (!email) {
+
+            alert(
+                "Enter your email first."
+            );
+
+            return;
+
+        }
+
+
+        const {
+            error
+        } =
+            await window.supabaseClient
+                .auth
+                .resetPasswordForEmail(
+                    email,
+                    {
+                        redirectTo:
+                            window.location.origin
+                    }
+                );
+
+
+        if (error) {
+
+            alert(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            "📧 Password reset email sent!"
+        );
+
+    }
+
+
+    async function changePassword() {
+
+        const password =
+            document.getElementById(
+                "newPassword"
+            ).value;
+
+
+        if (
+            password.length < 6
+        ) {
+
+            alert(
+                "Password must be at least 6 characters."
+            );
+
+            return;
+
+        }
+
+
+        const {
+            error
+        } =
+            await window.supabaseClient
+                .auth
+                .updateUser({
+
+                    password:
+                        password
+
+                });
+
+
+        if (error) {
+
+            alert(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        document.getElementById(
+            "newPassword"
+        ).value = "";
+
+
+        alert(
+            "✅ Password changed!"
+        );
+
+    }
+
+
+    async function updateAccountUI() {
+
+        const {
+            data
+        } =
+            await window.supabaseClient
+                .auth
+                .getUser();
+
+
+        const user =
+            data?.user;
+
+
+        const loginButton =
+            document.getElementById(
+                "loginButton"
+            );
+
+
+        const accountInfo =
+            document.getElementById(
+                "accountInfo"
+            );
+
+
+        if (user) {
+
+            loginButton.textContent =
+                "👤 Account";
+
+
+            loginButton.onclick =
+                () => showPage(
+                    "settings"
+                );
+
+
+            const username =
+                user.user_metadata
+                    ?.username ||
+                user.email;
+
+
+            accountInfo.innerHTML =
+                `
+                <p>
+                    👤
+                    <strong>
+                        ${escapeHTML(
+                            username
+                        )}
+                    </strong>
+                </p>
+
+                <p>
+                    📧
+                    ${escapeHTML(
+                        user.email
+                    )}
+                </p>
+                `;
+
+        }
+
+        else {
+
+            loginButton.textContent =
+                "🔐 Login";
+
+
+            loginButton.onclick =
+                () => showPage(
+                    "login"
+                );
+
+
+            accountInfo.innerHTML =
+                `
+                <p>
+                    Not logged in.
+                </p>
+                `;
+
+        }
+
+    }
+
+
+    function escapeHTML(
+        text
+    ) {
+
+        return String(
+            text ?? ""
+        )
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
+
+    }
+
+
+    /*
+     * Keep login state after refreshing.
+     */
+
+    window.supabaseClient
+        .auth
+        .onAuthStateChange(
+            (
+                event,
+                session
+            ) => {
+
+                updateAccountUI();
+
+            }
+        );
+
+
+    updateAccountUI();
+
+</script>
 
 
 <!-- =====================================================
@@ -1508,514 +1442,50 @@
 
 <script src="quiz-player.js"></script>
 
-<script src="app.js"></script>
-
-
 
 <!-- =====================================================
-     PAGE FUNCTIONS
+     HIDDEN FILE IMPORT
 ===================================================== -->
+
+<input
+    id="hiddenQuizFileInput"
+    type="file"
+    accept=".qz,.json"
+    style="display:none;"
+>
+
 
 <script>
 
-/* =====================================================
-   SHOW PAGE
-===================================================== */
-
-function showPage(pageName) {
-
-    document
-        .querySelectorAll(".page")
-        .forEach(function(page) {
-
-            page.classList.remove(
-                "active"
-            );
-
-        });
-
-
-    const page =
-        document.getElementById(
-            "page-" + pageName
-        );
-
-
-    if (!page) {
-
-        console.warn(
-            "Page not found:",
-            pageName
-        );
-
-        return;
-
-    }
-
-
-    page.classList.add(
-        "active"
-    );
-
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-
-
-    if (
-        pageName === "library"
-    ) {
-
-        if (
-            typeof loadPublicLibrary ===
-            "function"
-        ) {
-
-            loadPublicLibrary();
-
-        }
-
-    }
-
-
-    if (
-        pageName === "account"
-    ) {
-
-        updateAccountPage();
-
-    }
-
-
-    if (
-        pageName === "settings"
-    ) {
-
-        updateSettingsPage();
-
-    }
-
-}
-
-
-
-/* =====================================================
-   OPEN CREATE
-===================================================== */
-
-function openQuizCreator() {
-
     /*
-     * IMPORTANT:
-     * Always start a completely new quiz.
+     * Connect the file input to the
+     * quiz editor's import function.
      */
 
-    if (
-        typeof currentQuiz !==
-        "undefined"
-    ) {
-
-        currentQuiz = null;
-
-    }
-
-
-    showPage(
-        "create"
-    );
-
-
-    if (
-        typeof renderQuizEditor ===
-        "function"
-    ) {
-
-        renderQuizEditor();
-
-    }
-
-}
-
-
-
-/* =====================================================
-   ACCOUNT PAGE
-===================================================== */
-
-function openAccountPage() {
-
-    if (
-        typeof Auth !==
-        "undefined" &&
-        typeof Auth.isLoggedIn ===
-        "function" &&
-        Auth.isLoggedIn()
-    ) {
-
-        showPage(
-            "account"
-        );
-
-    }
-
-    else {
-
-        showPage(
-            "login"
-        );
-
-    }
-
-}
-
-
-
-/* =====================================================
-   UPDATE ACCOUNT
-===================================================== */
-
-function updateAccountPage() {
-
-    if (
-        typeof Auth ===
-        "undefined"
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        typeof Auth.getCurrentUser !==
-        "function"
-    ) {
-
-        return;
-
-    }
-
-
-    const user =
-        Auth.getCurrentUser();
-
-
-    if (!user) {
-
-        return;
-
-    }
-
-
-    const profile =
-        typeof Auth.getProfile ===
-        "function"
-            ? Auth.getProfile()
-            : null;
-
-
-    const username =
-        profile?.username ||
-        user.user_metadata?.username ||
-        "Player";
-
-
-    const coins =
-        profile?.coins ||
-        0;
-
-
-    const usernameElement =
-        document.getElementById(
-            "accountPageUsername"
-        );
-
-
-    const coinsElement =
-        document.getElementById(
-            "accountPageCoins"
-        );
-
-
-    if (usernameElement) {
-
-        usernameElement.textContent =
-            username;
-
-    }
-
-
-    if (coinsElement) {
-
-        coinsElement.textContent =
-            coins;
-
-    }
-
-}
-
-
-
-/* =====================================================
-   UPDATE SETTINGS
-===================================================== */
-
-function updateSettingsPage() {
-
-    if (
-        typeof Auth ===
-        "undefined"
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        typeof Auth.getCurrentUser !==
-        "function"
-    ) {
-
-        return;
-
-    }
-
-
-    const user =
-        Auth.getCurrentUser();
-
-
-    if (!user) {
-
-        return;
-
-    }
-
-
-    const profile =
-        typeof Auth.getProfile ===
-        "function"
-            ? Auth.getProfile()
-            : null;
-
-
-    const username =
-        profile?.username ||
-        user.user_metadata?.username ||
-        "Player";
-
-
-    const usernameElement =
-        document.getElementById(
-            "settingsUsername"
-        );
-
-
-    const emailElement =
-        document.getElementById(
-            "settingsEmail"
-        );
-
-
-    if (usernameElement) {
-
-        usernameElement.textContent =
-            username;
-
-    }
-
-
-    if (emailElement) {
-
-        emailElement.textContent =
-            user.email || "-";
-
-    }
-
-}
-
-
-
-/* =====================================================
-   OPEN IMPORT
-===================================================== */
-
-function openImportFile() {
-
-    const input =
-        document.getElementById(
+    document
+        .getElementById(
             "hiddenQuizFileInput"
+        )
+        .addEventListener(
+            "change",
+            function(event) {
+
+                if (
+                    typeof importQuizFile ===
+                    "function"
+                ) {
+
+                    importQuizFile(
+                        event
+                    );
+
+                }
+
+            }
         );
-
-
-    if (!input) {
-
-        alert(
-            "Import system is unavailable."
-        );
-
-        return;
-
-    }
-
-
-    input.value = "";
-
-
-    input.click();
-
-}
-
-
-
-/* =====================================================
-   EXPORT
-===================================================== */
-
-function exportCurrentQuiz() {
-
-    if (
-        typeof exportQuiz ===
-        "function"
-    ) {
-
-        exportQuiz();
-
-        return;
-
-    }
-
-
-    alert(
-        "Create or open a quiz first."
-    );
-
-}
-
-
-
-/* =====================================================
-   HOST
-===================================================== */
-
-function hostQuiz() {
-
-    if (
-        typeof Multiplayer !==
-        "undefined" &&
-        typeof Multiplayer.hostQuiz ===
-        "function"
-    ) {
-
-        Multiplayer.hostQuiz();
-
-        return;
-
-    }
-
-
-    alert(
-        "Multiplayer is still loading."
-    );
-
-}
-
-
-
-/* =====================================================
-   JOIN
-===================================================== */
-
-function joinQuiz() {
-
-    const input =
-        document.getElementById(
-            "joinGameCode"
-        );
-
-
-    const code =
-        input?.value
-            ?.trim()
-            .toUpperCase();
-
-
-    if (!code) {
-
-        alert(
-            "Please enter a game code."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        typeof Multiplayer !==
-        "undefined" &&
-        typeof Multiplayer.joinQuiz ===
-        "function"
-    ) {
-
-        Multiplayer.joinQuiz(
-            code
-        );
-
-        return;
-
-    }
-
-
-    alert(
-        "Multiplayer is still loading."
-    );
-
-}
-
-
-
-/* =====================================================
-   STARTUP
-===================================================== */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
-
-        showPage(
-            "home"
-        );
-
-
-        if (
-            typeof currentQuiz !==
-            "undefined"
-        ) {
-
-            currentQuiz = null;
-
-        }
-
-
-        if (
-            typeof renderQuizEditor ===
-            "function"
-        ) {
-
-            renderQuizEditor();
-
-        }
-
-    }
-);
 
 </script>
 
 
 </body>
-
 </html>
