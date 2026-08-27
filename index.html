@@ -309,9 +309,12 @@
             🏠 Home
         </button>
 
-        <button onclick="openCreateQuiz()">
-            ➕ Create
-        </button>
+        <button
+    class="primary"
+    onclick="createNewQuiz()"
+>
+    ➕ Create Quiz
+</button>
 
         <button onclick="openLibrary()">
             📚 Library
@@ -335,7 +338,12 @@
         >
             🔐 Login
         </button>
-
+<input
+    id="hiddenQuizFileInput"
+    type="file"
+    accept=".qz,.json"
+    style="display:none;"
+>
     </nav>
 
 </header>
