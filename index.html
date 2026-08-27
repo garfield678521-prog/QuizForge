@@ -28,36 +28,55 @@
 <body>
 
 <!-- =====================================================
-     HEADER
+     NAVIGATION
 ===================================================== -->
 
 <header class="topbar">
 
-    <div class="logo">
+    <div
+        class="logo"
+        onclick="showPage('home')"
+    >
         🧠 QuizForge
     </div>
 
 
     <nav id="mainNavigation">
 
-        <button onclick="showPage('home')">
+        <button
+            onclick="showPage('home')"
+        >
             🏠 Home
         </button>
 
-        <button onclick="showPage('library')">
+        <button
+            onclick="openQuizCreator()"
+        >
+            ➕ Create
+        </button>
+
+        <button
+            onclick="showPage('library')"
+        >
             📚 Library
         </button>
 
-        <button onclick="openQuizCreator()">
-           ➕ Create
-        </button>
-
-        <button onclick="showPage('play')">
+        <button
+            onclick="showPage('play')"
+        >
             🎮 Play
         </button>
 
-        <button onclick="showPage('multiplayer')">
+        <button
+            onclick="showPage('multiplayer')"
+        >
             👥 Multiplayer
+        </button>
+
+        <button
+            onclick="showPage('rewards')"
+        >
+            🪙 Rewards
         </button>
 
     </nav>
@@ -88,10 +107,11 @@
 
 
 <!-- =====================================================
-     MAIN APP
+     APP
 ===================================================== -->
 
 <main id="app">
+
 
 
 <!-- =====================================================
@@ -106,26 +126,41 @@
     <div class="hero">
 
         <h1>
-            🧠 Welcome to QuizForge
+            🧠 QuizForge
         </h1>
 
-        <p>
+        <h2>
             Create. Share. Play. Compete.
+        </h2>
+
+        <p>
+            Make your own quizzes, share them
+            with the world and compete against
+            other players.
         </p>
+
 
         <div class="hero-buttons">
 
             <button
                 class="primary"
-                onclick="showPage('create')"
+                onclick="openQuizCreator()"
             >
                 ➕ Create a Quiz
             </button>
 
+
             <button
                 onclick="showPage('library')"
             >
-                📚 Browse Quizzes
+                📚 Browse Library
+            </button>
+
+
+            <button
+                onclick="showPage('multiplayer')"
+            >
+                👥 Multiplayer
             </button>
 
         </div>
@@ -133,76 +168,128 @@
     </div>
 
 
+
     <div class="feature-grid">
 
+
         <div class="card">
 
-            <h2>✏️ Create</h2>
+            <h2>
+                ✏️ Create
+            </h2>
 
             <p>
-                Build your own quizzes with
-                custom questions and answers.
+                Build quizzes with your own
+                questions and answers.
             </p>
+
+            <button
+                onclick="openQuizCreator()"
+            >
+                Create
+            </button>
 
         </div>
 
 
+
         <div class="card">
 
-            <h2>🌎 Share</h2>
+            <h2>
+                📥 Import
+            </h2>
 
             <p>
-                Publish quizzes to the public
-                library for players around
-                the world.
+                Import QuizForge .qz files.
             </p>
+
+            <button
+                onclick="openImportFile()"
+            >
+                Import .qz
+            </button>
 
         </div>
 
 
+
         <div class="card">
 
-            <h2>🎮 Play</h2>
+            <h2>
+                📤 Export
+            </h2>
 
             <p>
-                Play quizzes and earn rewards.
+                Export your quizzes as .qz files.
             </p>
+
+            <button
+                onclick="exportCurrentQuiz()"
+            >
+                Export .qz
+            </button>
 
         </div>
 
 
+
         <div class="card">
 
-            <h2>👥 Multiplayer</h2>
+            <h2>
+                🌎 Public Library
+            </h2>
 
             <p>
-                Host quizzes and compete
-                against other players.
+                Discover quizzes created by
+                people around the world.
             </p>
+
+            <button
+                onclick="showPage('library')"
+            >
+                Browse
+            </button>
 
         </div>
 
 
+
         <div class="card">
 
-            <h2>🪙 Rewards</h2>
+            <h2>
+                👥 Multiplayer
+            </h2>
 
             <p>
-                Earn coins by playing quizzes
-                and unlock new skins.
+                Host games and play with
+                multiple players.
             </p>
+
+            <button
+                onclick="showPage('multiplayer')"
+            >
+                Play
+            </button>
 
         </div>
 
 
+
         <div class="card">
 
-            <h2>🏅 Badges</h2>
+            <h2>
+                🏆 Rewards
+            </h2>
 
             <p>
-                Complete challenges and
-                collect badges.
+                Earn coins, skins and badges.
             </p>
+
+            <button
+                onclick="showPage('rewards')"
+            >
+                View Rewards
+            </button>
 
         </div>
 
@@ -264,7 +351,10 @@
                 >
 
 
-                <div id="loginMessage"></div>
+                <div
+                    id="loginMessage"
+                    class="auth-message"
+                ></div>
 
 
                 <button
@@ -322,7 +412,7 @@
             </h1>
 
             <p>
-                Join QuizForge and start creating quizzes.
+                Join QuizForge.
             </p>
 
 
@@ -337,7 +427,7 @@
                 <input
                     id="signupUsername"
                     type="text"
-                    placeholder="Your username"
+                    placeholder="Username"
                     minlength="2"
                     maxlength="30"
                     required
@@ -378,14 +468,17 @@
                 <input
                     id="signupConfirmPassword"
                     type="password"
-                    placeholder="Repeat password"
+                    placeholder="Confirm password"
                     minlength="6"
                     autocomplete="new-password"
                     required
                 >
 
 
-                <div id="signupMessage"></div>
+                <div
+                    id="signupMessage"
+                    class="auth-message"
+                ></div>
 
 
                 <button
@@ -431,7 +524,7 @@
         <div class="auth-card">
 
             <h1>
-                📧 Check Your Email
+                📧 Verify Your Email
             </h1>
 
             <p>
@@ -440,16 +533,15 @@
             </p>
 
             <p>
-                Click the verification link
-                inside the email to activate
-                your QuizForge account.
+                Open the email and click the
+                verification link.
             </p>
 
 
             <button
                 onclick="showPage('login')"
             >
-                🔐 Return to Login
+                🔐 Back to Login
             </button>
 
         </div>
@@ -478,8 +570,7 @@
             </h1>
 
             <p>
-                Enter your email and we'll send
-                you a password reset link.
+                Enter your email address.
             </p>
 
 
@@ -499,7 +590,10 @@
                 >
 
 
-                <div id="resetMessage"></div>
+                <div
+                    id="resetMessage"
+                    class="auth-message"
+                ></div>
 
 
                 <button
@@ -544,25 +638,31 @@
     </div>
 
 
-    <div id="accountSettings">
-
-        <div class="card">
-
-            <h2>
-                Loading account...
-            </h2>
-
-        </div>
-
-    </div>
-
-
     <div
-        id="passwordSettings"
-        class="settings-section"
+        id="accountSettings"
+        class="card"
     >
 
+        <h2>
+            Account
+        </h2>
+
+        <p>
+            Username:
+            <strong id="accountPageUsername">
+                Guest
+            </strong>
+        </p>
+
+        <p>
+            Coins:
+            <strong id="accountPageCoins">
+                0
+            </strong>
+        </p>
+
     </div>
+
 
 
     <div class="card">
@@ -571,38 +671,51 @@
             📊 Statistics
         </h2>
 
+
         <div class="stats-grid">
 
             <div>
-                <strong id="statQuizzesCreated">
+
+                <strong
+                    id="statQuizzesCreated"
+                >
                     0
                 </strong>
 
                 <span>
                     Quizzes Created
                 </span>
+
             </div>
 
 
             <div>
-                <strong id="statQuizzesPlayed">
+
+                <strong
+                    id="statQuizzesPlayed"
+                >
                     0
                 </strong>
 
                 <span>
                     Quizzes Played
                 </span>
+
             </div>
 
 
             <div>
-                <strong id="statTotalScore">
+
+                <strong
+                    id="statTotalScore"
+                >
                     0
                 </strong>
 
                 <span>
                     Total Score
                 </span>
+
             </div>
 
         </div>
@@ -610,11 +723,131 @@
     </div>
 
 
+
+    <button
+        onclick="showPage('settings')"
+    >
+        ⚙️ Settings
+    </button>
+
+
     <button
         class="danger"
         onclick="Auth.logout()"
     >
         🚪 Logout
+    </button>
+
+</section>
+
+
+
+<!-- =====================================================
+     SETTINGS
+===================================================== -->
+
+<section
+    id="page-settings"
+    class="page"
+>
+
+    <div class="page-header">
+
+        <h1>
+            ⚙️ Settings
+        </h1>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>
+            👤 Account
+        </h2>
+
+
+        <p>
+            Username:
+            <strong id="settingsUsername">
+                Guest
+            </strong>
+        </p>
+
+
+        <p>
+            Email:
+            <strong id="settingsEmail">
+                -
+            </strong>
+        </p>
+
+    </div>
+
+
+
+    <div class="card">
+
+        <h2>
+            🔑 Change Password
+        </h2>
+
+
+        <form
+            id="changePasswordForm"
+            onsubmit="handlePasswordChange(event)"
+        >
+
+            <label for="newPassword">
+                New Password
+            </label>
+
+            <input
+                id="newPassword"
+                type="password"
+                minlength="6"
+                autocomplete="new-password"
+                placeholder="New password"
+                required
+            >
+
+
+            <label for="confirmPassword">
+                Confirm New Password
+            </label>
+
+            <input
+                id="confirmPassword"
+                type="password"
+                minlength="6"
+                autocomplete="new-password"
+                placeholder="Confirm new password"
+                required
+            >
+
+
+            <div
+                id="passwordMessage"
+                class="auth-message"
+            ></div>
+
+
+            <button
+                type="submit"
+                class="primary"
+            >
+                🔒 Change Password
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <button
+        onclick="showPage('account')"
+    >
+        ← Back to Account
     </button>
 
 </section>
@@ -633,19 +866,48 @@
     <div class="page-header">
 
         <h1>
-            ➕ Create Quiz
+            ✏️ Quiz Creator
         </h1>
 
         <p>
-            Start with a completely blank quiz.
+            Create a completely new blank quiz.
         </p>
 
     </div>
 
 
-    <div id="quizEditor">
+    <div
+        id="quizEditor"
+        class="quiz-editor"
+    >
 
-        <!-- quiz-editor.js goes here -->
+        <div class="card">
+
+            <h2>
+                🆕 Start a New Quiz
+            </h2>
+
+            <p>
+                Your previous quiz will not
+                automatically appear here.
+            </p>
+
+
+            <button
+                class="primary"
+                onclick="createNewQuiz()"
+            >
+                ➕ New Blank Quiz
+            </button>
+
+
+            <button
+                onclick="openImportFile()"
+            >
+                📥 Import .qz
+            </button>
+
+        </div>
 
     </div>
 
@@ -654,7 +916,50 @@
 
 
 <!-- =====================================================
-     QUIZ LIBRARY
+     IMPORT
+===================================================== -->
+
+<section
+    id="page-import"
+    class="page"
+>
+
+    <div class="page-header">
+
+        <h1>
+            📥 Import Quiz
+        </h1>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>
+            Import a .qz file
+        </h2>
+
+        <p>
+            Choose a QuizForge quiz file
+            from your device.
+        </p>
+
+
+        <input
+            id="quizFileInput"
+            type="file"
+            accept=".qz,application/json"
+            onchange="importQuizFile(event)"
+        >
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     LIBRARY
 ===================================================== -->
 
 <section
@@ -669,8 +974,8 @@
         </h1>
 
         <p>
-            Discover quizzes created by players
-            around the world.
+            Explore quizzes from QuizForge
+            players around the world.
         </p>
 
     </div>
@@ -684,6 +989,7 @@
             🌎 Public Library
         </button>
 
+
         <button
             onclick="loadMyQuizzes()"
         >
@@ -693,10 +999,21 @@
     </div>
 
 
-    <div id="quizLibrary">
+    <div
+        id="quizLibrary"
+        class="quiz-library"
+    >
 
-        <div class="loading">
-            Loading quizzes...
+        <div class="card">
+
+            <h2>
+                🌎 Public Library
+            </h2>
+
+            <p>
+                Loading quizzes...
+            </p>
+
         </div>
 
     </div>
@@ -706,7 +1023,7 @@
 
 
 <!-- =====================================================
-     QUIZ PLAY
+     PLAY
 ===================================================== -->
 
 <section
@@ -714,18 +1031,30 @@
     class="page"
 >
 
-    <div id="quizPlayer">
+    <div class="page-header">
+
+        <h1>
+            🎮 Play Quiz
+        </h1>
+
+    </div>
+
+
+    <div
+        id="quizPlayer"
+        class="quiz-player"
+    >
 
         <div class="card">
 
-            <h1>
-                🎮 Quiz Player
-            </h1>
+            <h2>
+                🎮 Ready to Play?
+            </h2>
 
             <p>
-                Select a quiz from the library
-                to start playing.
+                Choose a quiz from the library.
             </p>
+
 
             <button
                 onclick="showPage('library')"
@@ -757,7 +1086,7 @@
         </h1>
 
         <p>
-            Host or join a QuizForge game.
+            Host a quiz or join another player.
         </p>
 
     </div>
@@ -765,18 +1094,20 @@
 
     <div class="multiplayer-grid">
 
+
         <div class="card">
 
             <h2>
-                🎤 Host a Quiz
+                🎤 Host
             </h2>
 
             <p>
-                Create a game and invite
-                other players.
+                Host a quiz and invite players.
             </p>
 
+
             <button
+                class="primary"
                 onclick="hostQuiz()"
             >
                 🎮 Host Game
@@ -785,17 +1116,21 @@
         </div>
 
 
+
         <div class="card">
 
             <h2>
-                🚪 Join a Game
+                🚪 Join
             </h2>
+
 
             <input
                 id="joinGameCode"
                 type="text"
-                placeholder="Game code"
+                placeholder="Enter game code"
+                maxlength="12"
             >
+
 
             <button
                 onclick="joinQuiz()"
@@ -808,9 +1143,9 @@
     </div>
 
 
-    <div id="multiplayerGame">
-
-    </div>
+    <div
+        id="multiplayerGame"
+    ></div>
 
 </section>
 
@@ -828,13 +1163,28 @@
     <div class="page-header">
 
         <h1>
-            🏆 Quiz Results
+            🏆 Results
         </h1>
 
     </div>
 
 
-    <div id="quizResults">
+    <div
+        id="quizResults"
+        class="quiz-results"
+    >
+
+        <div class="card">
+
+            <h2>
+                🏆 Quiz Results
+            </h2>
+
+            <p>
+                Your results will appear here.
+            </p>
+
+        </div>
 
     </div>
 
@@ -867,13 +1217,15 @@
         </h2>
 
         <p>
-            Your coins:
+            You have
             <strong id="accountCoins">
                 0
             </strong>
+            coins.
         </p>
 
     </div>
+
 
 
     <div class="card">
@@ -882,11 +1234,19 @@
             🎨 Skins
         </h2>
 
-        <div id="skinShop">
+        <div
+            id="skinShop"
+            class="skin-grid"
+        >
+
+            <p>
+                Loading skins...
+            </p>
 
         </div>
 
     </div>
+
 
 
     <div class="card">
@@ -895,7 +1255,14 @@
             🏅 Badges
         </h2>
 
-        <div id="badgeCollection">
+        <div
+            id="badgeCollection"
+            class="badge-grid"
+        >
+
+            <p>
+                Loading badges...
+            </p>
 
         </div>
 
@@ -906,7 +1273,7 @@
 
 
 <!-- =====================================================
-     ADMIN PANEL
+     ADMIN
 ===================================================== -->
 
 <section
@@ -927,108 +1294,18 @@
     </div>
 
 
-    <div id="adminPanel">
+    <div
+        id="adminPanel"
+        class="admin-panel"
+    >
 
         <div class="card">
 
             <h2>
-                🔒 Administrator Access
+                🔒 Checking permissions...
             </h2>
 
-            <p>
-                Checking permissions...
-            </p>
-
         </div>
-
-    </div>
-
-</section>
-
-
-
-<!-- =====================================================
-     SETTINGS
-===================================================== -->
-
-<section
-    id="page-settings"
-    class="page"
->
-
-    <div class="page-header">
-
-        <h1>
-            ⚙️ Settings
-        </h1>
-
-    </div>
-
-
-    <div class="card">
-
-        <h2>
-            👤 Account
-        </h2>
-
-        <div id="settingsAccount">
-
-        </div>
-
-    </div>
-
-
-    <div
-        id="settingsPassword"
-        class="card"
-    >
-
-        <h2>
-            🔑 Change Password
-        </h2>
-
-
-        <form
-            id="changePasswordForm"
-            onsubmit="handlePasswordChange(event)"
-        >
-
-            <label for="newPassword">
-                New Password
-            </label>
-
-            <input
-                id="newPassword"
-                type="password"
-                minlength="6"
-                autocomplete="new-password"
-                required
-            >
-
-
-            <label for="confirmPassword">
-                Confirm New Password
-            </label>
-
-            <input
-                id="confirmPassword"
-                type="password"
-                minlength="6"
-                autocomplete="new-password"
-                required
-            >
-
-
-            <div id="passwordMessage"></div>
-
-
-            <button
-                type="submit"
-            >
-                🔒 Change Password
-            </button>
-
-        </form>
 
     </div>
 
@@ -1046,9 +1323,9 @@
 
 <footer>
 
-    <p>
+    <h3>
         🧠 QuizForge
-    </p>
+    </h3>
 
     <p>
         Create • Share • Play • Compete
@@ -1063,14 +1340,29 @@
 
 
 <!-- =====================================================
+     HIDDEN IMPORT INPUT
+===================================================== -->
+
+<input
+    id="hiddenQuizFileInput"
+    type="file"
+    accept=".qz,application/json"
+    hidden
+    onchange="importQuizFile(event)"
+>
+
+
+
+<!-- =====================================================
      SUPABASE
 ===================================================== -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 
+
 <!-- =====================================================
-     QUIZFORGE JAVASCRIPT
+     QUIZFORGE FILES
 ===================================================== -->
 
 <script src="auth.js"></script>
@@ -1088,8 +1380,9 @@
 <script src="app.js"></script>
 
 
+
 <!-- =====================================================
-     BASIC PAGE SYSTEM
+     PAGE SYSTEM
 ===================================================== -->
 
 <script>
@@ -1098,11 +1391,9 @@ function showPage(pageName) {
 
     document
         .querySelectorAll(".page")
-        .forEach(page => {
+        .forEach(function(page) {
 
-            page.classList.remove(
-                "active"
-            );
+            page.classList.remove("active");
 
         });
 
@@ -1125,35 +1416,29 @@ function showPage(pageName) {
     }
 
 
-    page.classList.add(
-        "active"
-    );
+    page.classList.add("active");
 
 
-    window.scrollTo(
-        0,
-        0
-    );
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
 
 
     /*
-     * Load account information
-     * when opening the account page.
+     * Load library whenever it opens.
      */
 
     if (
-        pageName === "account" &&
-        typeof Auth !== "undefined"
+        pageName === "library"
     ) {
 
         if (
-            typeof Auth.renderSettings ===
+            typeof loadPublicLibrary ===
             "function"
         ) {
 
-            Auth.renderSettings(
-                "accountSettings"
-            );
+            loadPublicLibrary();
 
         }
 
@@ -1161,38 +1446,86 @@ function showPage(pageName) {
 
 
     /*
-     * Load password settings.
+     * Update account page.
      */
 
     if (
-        pageName === "settings" &&
-        typeof Auth !== "undefined"
+        pageName === "account"
     ) {
 
-        if (
-            typeof Auth.renderPasswordSettings ===
-            "function"
-        ) {
+        updateAccountPage();
 
-            Auth.renderPasswordSettings(
-                "settingsPassword"
-            );
+    }
 
-        }
+
+    /*
+     * Update settings.
+
+     */
+
+    if (
+        pageName === "settings"
+    ) {
+
+        updateSettingsPage();
 
     }
 
 }
 
 
+
 /* =====================================================
-   ACCOUNT BUTTON
+   CREATE PAGE
+===================================================== */
+
+function openQuizCreator() {
+
+    /*
+     * IMPORTANT:
+     *
+     * This clears the previous editor.
+     * Create ALWAYS starts blank.
+     */
+
+    if (
+        typeof currentQuiz !==
+        "undefined"
+    ) {
+
+        currentQuiz =
+            null;
+
+    }
+
+
+    showPage(
+        "create"
+    );
+
+
+    if (
+        typeof renderQuizEditor ===
+        "function"
+    ) {
+
+        renderQuizEditor();
+
+    }
+
+}
+
+
+
+/* =====================================================
+   ACCOUNT
 ===================================================== */
 
 function openAccountPage() {
 
     if (
-        typeof Auth !== "undefined" &&
+        typeof Auth !==
+        "undefined" &&
         Auth.isLoggedIn()
     ) {
 
@@ -1213,14 +1546,258 @@ function openAccountPage() {
 }
 
 
+
 /* =====================================================
-   HOST QUIZ
+   ACCOUNT PAGE UPDATE
+===================================================== */
+
+function updateAccountPage() {
+
+    if (
+        typeof Auth ===
+        "undefined"
+    ) {
+
+        return;
+
+    }
+
+
+    const user =
+        Auth.getCurrentUser();
+
+
+    const profile =
+        Auth.getProfile();
+
+
+    if (!user) {
+
+        return;
+
+    }
+
+
+    const username =
+        profile?.username ||
+        user.user_metadata?.username ||
+        "Player";
+
+
+    const coins =
+        profile?.coins ||
+        0;
+
+
+    const usernameElement =
+        document.getElementById(
+            "accountPageUsername"
+        );
+
+
+    const coinsElement =
+        document.getElementById(
+            "accountPageCoins"
+        );
+
+
+    const createdElement =
+        document.getElementById(
+            "statQuizzesCreated"
+        );
+
+
+    const playedElement =
+        document.getElementById(
+            "statQuizzesPlayed"
+        );
+
+
+    const scoreElement =
+        document.getElementById(
+            "statTotalScore"
+        );
+
+
+    if (usernameElement) {
+
+        usernameElement.textContent =
+            username;
+
+    }
+
+
+    if (coinsElement) {
+
+        coinsElement.textContent =
+            coins;
+
+    }
+
+
+    if (createdElement) {
+
+        createdElement.textContent =
+            profile?.quizzes_created || 0;
+
+    }
+
+
+    if (playedElement) {
+
+        playedElement.textContent =
+            profile?.quizzes_played || 0;
+
+    }
+
+
+    if (scoreElement) {
+
+        scoreElement.textContent =
+            profile?.total_score || 0;
+
+    }
+
+}
+
+
+
+/* =====================================================
+   SETTINGS PAGE
+===================================================== */
+
+function updateSettingsPage() {
+
+    if (
+        typeof Auth ===
+        "undefined"
+    ) {
+
+        return;
+
+    }
+
+
+    const user =
+        Auth.getCurrentUser();
+
+
+    const profile =
+        Auth.getProfile();
+
+
+    if (!user) {
+
+        return;
+
+    }
+
+
+    const username =
+        profile?.username ||
+        user.user_metadata?.username ||
+        "Player";
+
+
+    const usernameElement =
+        document.getElementById(
+            "settingsUsername"
+        );
+
+
+    const emailElement =
+        document.getElementById(
+            "settingsEmail"
+        );
+
+
+    if (usernameElement) {
+
+        usernameElement.textContent =
+            username;
+
+    }
+
+
+    if (emailElement) {
+
+        emailElement.textContent =
+            user.email || "-";
+
+    }
+
+}
+
+
+
+/* =====================================================
+   IMPORT FILE
+===================================================== */
+
+function openImportFile() {
+
+    const input =
+        document.getElementById(
+            "hiddenQuizFileInput"
+        );
+
+
+    if (!input) {
+
+        alert(
+            "Import system is unavailable."
+        );
+
+        return;
+
+    }
+
+
+    input.value =
+        "";
+
+
+    input.click();
+
+}
+
+
+
+/* =====================================================
+   EXPORT CURRENT QUIZ
+===================================================== */
+
+function exportCurrentQuiz() {
+
+    if (
+        typeof exportQuiz ===
+        "function"
+    ) {
+
+        exportQuiz();
+
+        return;
+
+    }
+
+
+    alert(
+        "Open the quiz editor first."
+    );
+
+}
+
+
+
+/* =====================================================
+   HOST GAME
 ===================================================== */
 
 function hostQuiz() {
 
     if (
-        typeof Multiplayer !== "undefined" &&
+        typeof Multiplayer !==
+        "undefined" &&
         typeof Multiplayer.hostQuiz ===
         "function"
     ) {
@@ -1233,29 +1810,35 @@ function hostQuiz() {
 
 
     alert(
-        "Multiplayer system is loading."
+        "Multiplayer is still loading."
     );
 
 }
 
 
+
 /* =====================================================
-   JOIN QUIZ
+   JOIN GAME
 ===================================================== */
 
 function joinQuiz() {
 
-    const code =
+    const input =
         document.getElementById(
             "joinGameCode"
-        )?.value
-        ?.trim();
+        );
+
+
+    const code =
+        input?.value
+            ?.trim()
+            .toUpperCase();
 
 
     if (!code) {
 
         alert(
-            "Please enter a game code."
+            "Enter a game code first."
         );
 
         return;
@@ -1264,7 +1847,8 @@ function joinQuiz() {
 
 
     if (
-        typeof Multiplayer !== "undefined" &&
+        typeof Multiplayer !==
+        "undefined" &&
         typeof Multiplayer.joinQuiz ===
         "function"
     ) {
@@ -1279,66 +1863,63 @@ function joinQuiz() {
 
 
     alert(
-        "Multiplayer system is loading."
+        "Multiplayer is still loading."
     );
 
 }
 
 
-/* =====================================================
-   PUBLIC LIBRARY
-===================================================== */
-
-function loadPublicLibrary() {
-
-    if (
-        typeof Library !== "undefined" &&
-        typeof Library.loadPublic ===
-        "function"
-    ) {
-
-        Library.loadPublic();
-
-    }
-
-}
-
 
 /* =====================================================
-   MY QUIZZES
-===================================================== */
-
-function loadMyQuizzes() {
-
-    if (
-        typeof Library !== "undefined" &&
-        typeof Library.loadMine ===
-        "function"
-    ) {
-
-        Library.loadMine();
-
-    }
-
-}
-
-
-/* =====================================================
-   PAGE STARTUP
+   STARTUP
 ===================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
+    function() {
+
+        /*
+         * Always start on Home.
+         */
 
         showPage(
             "home"
         );
 
+
+        /*
+         * Make sure Create starts blank.
+         */
+
+        if (
+            typeof currentQuiz !==
+            "undefined"
+        ) {
+
+            currentQuiz =
+                null;
+
+        }
+
+
+        /*
+         * Render the empty editor.
+         */
+
+        if (
+            typeof renderQuizEditor ===
+            "function"
+        ) {
+
+            renderQuizEditor();
+
+        }
+
     }
 );
 
 </script>
+
 
 </body>
 
