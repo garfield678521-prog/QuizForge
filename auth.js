@@ -1,325 +1,113 @@
 /* =========================================================
    QUIZFORGE AUTH.JS
-   Complete Authentication System
-   =========================================================
-
-   FEATURES
-   • Login
-   • Sign up
-   • Valid email checking
-   • Required passwords
-   • Password changing
-   • Logout
-   • Persistent account data
-   • Separate data for every account
-   • Admin detection
-   • Admin permissions
-   • Session restoration
-   • Account settings
-   • Coins / skins / badges saved
-   • Logout does NOT delete account data
-
-   IMPORTANT:
-   This localStorage version is for a demo/GitHub Pages
-   prototype. Real production authentication should use
-   a secure backend with password hashing.
+   Supabase Authentication
 ========================================================= */
+
+const SUPABASE_URL =
+    "https://hlnrnnolzlvkwuilwfky.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_POI4OqPx3GIX59rMfct_oA_JuWdss3v";
 
 
 /* =========================================================
-   SETTINGS
+   CREATE SUPABASE CLIENT
 ========================================================= */
 
-const QUIZFORGE_AUTH_CONFIG = {
-
-    ADMIN_EMAIL:
-        "garfield678521@gmail.com",
-
-    /*
-     * Initial admin password.
-     *
-     * WARNING:
-     * Because this is a GitHub Pages/local version,
-     * anyone who can inspect the source can potentially
-     * discover this password.
-     *
-     * Move authentication to a backend before using
-     * this for a real public service.
-     */
-
-    INITIAL_ADMIN_PASSWORD:
-        "OscArc22",
-
-    MIN_PASSWORD_LENGTH:
-        6,
-
-    USERS_STORAGE_KEY:
-        "quizforge_users",
-
-    SESSION_STORAGE_KEY:
-        "quizforge_session"
-
-};
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+    );
 
 
 /* =========================================================
-   ADMIN PERMISSIONS
-========================================================= */
-
-const QUIZFORGE_ADMIN_PERMISSIONS = {
-
-    MANAGE_USERS: true,
-
-    MANAGE_QUIZZES: true,
-
-    DELETE_PUBLIC_QUIZZES: true,
-
-    MANAGE_BADGES: true,
-
-    MANAGE_SKINS: true,
-
-    MANAGE_COINS: true,
-
-    VIEW_RESULTS: true,
-
-    VIEW_STATISTICS: true,
-
-    ADMIN_SETTINGS: true,
-
-    MODERATE_LIBRARY: true
-
-};
-
-
-/* =========================================================
-   AUTH OBJECT
+   QUIZFORGE AUTH
 ========================================================= */
 
 const Auth = {
 
     currentUser: null,
+    profile: null,
 
 
     /* =====================================================
        INITIALISE
     ===================================================== */
 
-    init() {
-
-        this.createAdminAccount();
-
-        this.restoreSession();
-
-        this.updateUI();
-
-    },
-
-
-    /* =====================================================
-       GET USERS
-    ===================================================== */
-
-    getUsers() {
+    async init() {
 
         try {
 
-            const stored =
-                localStorage.getItem(
-                    QUIZFORGE_AUTH_CONFIG.USERS_STORAGE_KEY
+            const {
+                data
+            } =
+                await supabaseClient.auth.getSession();
+
+
+            if (data.session) {
+
+                await this.loadUser(
+                    data.session.user
                 );
 
-
-            if (!stored) {
-
-                return [];
-
             }
 
 
-            const users =
-                JSON.parse(stored);
+            /*
+             * Listen for login/logout/email
+             * verification events.
+             */
+
+            supabaseClient.auth.onAuthStateChange(
+                async (
+                    event,
+                    session
+                ) => {
+
+                    console.log(
+                        "Auth event:",
+                        event
+                    );
 
 
-            if (!Array.isArray(users)) {
+                    if (session?.user) {
 
-                return [];
+                        await this.loadUser(
+                            session.user
+                        );
 
-            }
+                    }
+
+                    else {
+
+                        this.currentUser =
+                            null;
+
+                        this.profile =
+                            null;
+
+                    }
 
 
-            return users;
+                    this.updateUI();
+
+                }
+            );
+
+
+            this.updateUI();
 
         }
 
         catch (error) {
 
             console.error(
-                "QuizForge: Could not load users.",
+                "QuizForge authentication error:",
                 error
             );
 
-            return [];
-
         }
-
-    },
-
-
-    /* =====================================================
-       SAVE USERS
-    ===================================================== */
-
-    saveUsers(users) {
-
-        localStorage.setItem(
-
-            QUIZFORGE_AUTH_CONFIG.USERS_STORAGE_KEY,
-
-            JSON.stringify(users)
-
-        );
-
-    },
-
-
-    /* =====================================================
-       CREATE ADMIN ACCOUNT
-    ===================================================== */
-
-    createAdminAccount() {
-
-        const users =
-            this.getUsers();
-
-
-        const adminEmail =
-            QUIZFORGE_AUTH_CONFIG.ADMIN_EMAIL
-                .toLowerCase();
-
-
-        const existingAdmin =
-            users.find(
-                user =>
-                    user.email &&
-                    user.email.toLowerCase() ===
-                    adminEmail
-            );
-
-
-        if (existingAdmin) {
-
-            /*
-             * Make sure the account remains
-             * recognised as admin.
-             */
-
-            existingAdmin.isAdmin = true;
-
-            this.saveUsers(users);
-
-            return;
-
-        }
-
-
-        const admin = {
-
-            id:
-                this.createID(),
-
-            username:
-                "Admin",
-
-            email:
-                adminEmail,
-
-            password:
-                QUIZFORGE_AUTH_CONFIG
-                    .INITIAL_ADMIN_PASSWORD,
-
-            isAdmin:
-                true,
-
-            coins:
-                100,
-
-            skins: [
-                "default"
-            ],
-
-            selectedSkin:
-                "default",
-
-            badges: [],
-
-            quizzesCreated:
-                0,
-
-            quizzesPlayed:
-                0,
-
-            totalScore:
-                0,
-
-            createdAt:
-                new Date().toISOString(),
-
-            lastLogin:
-                null
-
-        };
-
-
-        users.push(admin);
-
-        this.saveUsers(users);
-
-    },
-
-
-    /* =====================================================
-       VALID EMAIL
-    ===================================================== */
-
-    isValidEmail(email) {
-
-        if (!email) {
-
-            return false;
-
-        }
-
-
-        email =
-            String(email).trim();
-
-
-        /*
-         * Basic but useful email validation.
-         */
-
-        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i
-            .test(email);
-
-    },
-
-
-    /* =====================================================
-       VALID PASSWORD
-    ===================================================== */
-
-    isValidPassword(password) {
-
-        if (!password) {
-
-            return false;
-
-        }
-
-
-        return String(password).length >=
-            QUIZFORGE_AUTH_CONFIG
-                .MIN_PASSWORD_LENGTH;
 
     },
 
@@ -328,34 +116,41 @@ const Auth = {
        SIGN UP
     ===================================================== */
 
-    signup(
+    async signup(
         username,
         email,
         password,
-        confirmPassword = password
+        confirmPassword
     ) {
 
         username =
-            String(username || "")
-                .trim();
+            String(
+                username || ""
+            ).trim();
 
 
         email =
-            String(email || "")
-                .trim()
-                .toLowerCase();
+            String(
+                email || ""
+            )
+            .trim()
+            .toLowerCase();
 
 
         password =
-            String(password || "");
+            String(
+                password || ""
+            );
 
 
         confirmPassword =
-            String(confirmPassword || "");
+            String(
+                confirmPassword || ""
+            );
 
 
         /* -----------------------------------------------
-           USERNAME
+           VALIDATION
         ------------------------------------------------ */
 
         if (!username) {
@@ -376,19 +171,6 @@ const Auth = {
         }
 
 
-        /* -----------------------------------------------
-           EMAIL
-        ------------------------------------------------ */
-
-        if (!email) {
-
-            throw new Error(
-                "Please enter your email address."
-            );
-
-        }
-
-
         if (!this.isValidEmail(email)) {
 
             throw new Error(
@@ -398,34 +180,14 @@ const Auth = {
         }
 
 
-        /* -----------------------------------------------
-           PASSWORD
-        ------------------------------------------------ */
-
-        if (!password) {
+        if (password.length < 6) {
 
             throw new Error(
-                "Please enter a password."
+                "Password must be at least 6 characters."
             );
 
         }
 
-
-        if (!this.isValidPassword(password)) {
-
-            throw new Error(
-                `Password must be at least ${
-                    QUIZFORGE_AUTH_CONFIG
-                        .MIN_PASSWORD_LENGTH
-                } characters.`
-            );
-
-        }
-
-
-        /* -----------------------------------------------
-           CONFIRM PASSWORD
-        ------------------------------------------------ */
 
         if (
             password !==
@@ -440,98 +202,111 @@ const Auth = {
 
 
         /* -----------------------------------------------
-           CHECK EXISTING USER
+           SUPABASE SIGN UP
         ------------------------------------------------ */
 
-        const users =
-            this.getUsers();
+        const {
+            data,
+            error
+        } =
+            await supabaseClient.auth.signUp({
+
+                email,
+
+                password,
+
+                options: {
+
+                    data: {
+
+                        username
+
+                    },
+
+                    emailRedirectTo:
+                        window.location.origin +
+                        window.location.pathname
+
+                }
+
+            });
 
 
-        const existing =
-            users.find(
-                user =>
-                    user.email &&
-                    user.email.toLowerCase() ===
-                    email
-            );
+        if (error) {
+
+            throw error;
+
+        }
 
 
-        if (existing) {
+        /*
+         * If email confirmation is enabled,
+         * session may be null here.
+         */
+
+        if (!data.user) {
 
             throw new Error(
-                "An account with this email already exists."
+                "Account could not be created."
             );
 
         }
 
 
-        /* -----------------------------------------------
-           CREATE USER
-        ------------------------------------------------ */
+        /*
+         * If confirmation is required,
+         * show the verification message.
+         */
 
-        const user = {
+        if (!data.session) {
 
-            id:
-                this.createID(),
+            this.showMessage(
+                "signupMessage",
+                "📧 Account created! Check your email and click the verification link before logging in.",
+                "success"
+            );
 
-            username,
+            return {
 
-            email,
+                user:
+                    data.user,
 
-            password,
+                needsVerification:
+                    true
 
-            isAdmin:
-                email ===
-                QUIZFORGE_AUTH_CONFIG
-                    .ADMIN_EMAIL
-                    .toLowerCase(),
+            };
 
-            coins:
-                100,
-
-            skins: [
-                "default"
-            ],
-
-            selectedSkin:
-                "default",
-
-            badges: [],
-
-            quizzesCreated:
-                0,
-
-            quizzesPlayed:
-                0,
-
-            totalScore:
-                0,
-
-            createdAt:
-                new Date().toISOString(),
-
-            lastLogin:
-                null
-
-        };
-
-
-        users.push(user);
-
-        this.saveUsers(users);
+        }
 
 
         /*
-         * Automatically log the new user in.
+         * If email confirmation isn't required,
+         * create/load the profile.
          */
 
-        this.login(
-            email,
-            password
+        await this.createProfile(
+            data.user,
+            username
         );
 
 
-        return this.currentUser;
+        await this.loadUser(
+            data.user
+        );
+
+
+        this.updateUI();
+
+
+        return {
+
+            user:
+                data.user,
+
+            needsVerification:
+                false
+
+        };
 
     },
 
@@ -540,37 +315,24 @@ const Auth = {
        LOGIN
     ===================================================== */
 
-    login(
+    async login(
         email,
         password
     ) {
 
         email =
-            String(email || "")
-                .trim()
-                .toLowerCase();
+            String(
+                email || ""
+            )
+            .trim()
+            .toLowerCase();
 
 
         password =
-            String(password || "");
-
-
-        /* -----------------------------------------------
-           EMAIL REQUIRED
-        ------------------------------------------------ */
-
-        if (!email) {
-
-            throw new Error(
-                "Please enter your email address."
+            String(
+                password || ""
             );
 
-        }
-
-
-        /* -----------------------------------------------
-           EMAIL VALIDATION
-        ------------------------------------------------ */
 
         if (!this.isValidEmail(email)) {
 
@@ -581,10 +343,6 @@ const Auth = {
         }
 
 
-        /* -----------------------------------------------
-           PASSWORD REQUIRED
-        ------------------------------------------------ */
-
         if (!password) {
 
             throw new Error(
@@ -594,28 +352,20 @@ const Auth = {
         }
 
 
-        /* -----------------------------------------------
-           FIND ACCOUNT
-        ------------------------------------------------ */
+        const {
+            data,
+            error
+        } =
+            await supabaseClient.auth.signInWithPassword({
 
-        const users =
-            this.getUsers();
+                email,
 
+                password
 
-        const user =
-            users.find(
-                item =>
-
-                    item.email &&
-                    item.email.toLowerCase() ===
-                    email &&
-
-                    item.password ===
-                    password
-            );
+            });
 
 
-        if (!user) {
+        if (error) {
 
             throw new Error(
                 "Incorrect email or password."
@@ -624,40 +374,36 @@ const Auth = {
         }
 
 
-        /* -----------------------------------------------
-           UPDATE LOGIN
-        ------------------------------------------------ */
+        if (!data.user) {
 
-        user.lastLogin =
-            new Date().toISOString();
+            throw new Error(
+                "Login failed."
+            );
+
+        }
 
 
         /*
-         * Always calculate admin status from
-         * the protected admin email.
+         * Check email verification.
          */
 
-        user.isAdmin =
-            user.email.toLowerCase() ===
-            QUIZFORGE_AUTH_CONFIG
-                .ADMIN_EMAIL
-                .toLowerCase();
+        if (
+            !data.user.email_confirmed_at
+        ) {
 
+            await supabaseClient.auth.signOut();
 
-        this.saveUsers(users);
-
-
-        /* -----------------------------------------------
-           CREATE SESSION
-        ------------------------------------------------ */
-
-        this.currentUser =
-            JSON.parse(
-                JSON.stringify(user)
+            throw new Error(
+                "Please verify your email address before logging in."
             );
 
+        }
 
-        this.saveSession();
+
+        await this.loadUser(
+            data.user
+        );
+
 
         this.updateUI();
 
@@ -671,54 +417,42 @@ const Auth = {
        LOGOUT
     ===================================================== */
 
-    logout() {
+    async logout() {
 
         /*
-         * ONLY the session is removed.
+         * Supabase signs out the session.
          *
-         * The following remain saved:
-         *
-         * ✓ Account
-         * ✓ Quizzes
-         * ✓ Coins
-         * ✓ Skins
-         * ✓ Badges
-         * ✓ Statistics
+         * Profile/database data is NOT deleted.
          */
 
-        this.currentUser = null;
+        const {
+            error
+        } =
+            await supabaseClient.auth.signOut();
 
 
-        sessionStorage.removeItem(
-            QUIZFORGE_AUTH_CONFIG
-                .SESSION_STORAGE_KEY
-        );
+        if (error) {
+
+            console.error(
+                "Logout error:",
+                error
+            );
+
+        }
 
 
-        /*
-         * Remove any old session stored
-         * by previous versions.
-         */
+        this.currentUser =
+            null;
 
-        localStorage.removeItem(
-            QUIZFORGE_AUTH_CONFIG
-                .SESSION_STORAGE_KEY
-        );
-
-
-        localStorage.removeItem(
-            "quizforge_user"
-        );
+        this.profile =
+            null;
 
 
         this.updateUI();
 
-        this.resetVisibleUI();
-
 
         /*
-         * Return to login screen if
-         * app.js provides showPage().
+         * Return to login page.
          */
 
         if (
@@ -728,197 +462,210 @@ const Auth = {
 
             try {
 
-                showPage("login");
+                showPage(
+                    "login"
+                );
 
             }
 
-            catch (error) {
+            catch {
 
-                console.warn(
-                    "QuizForge: Could not open login page.",
+                // Login page unavailable.
+
+            }
+
+        }
+
+
+        return true;
+
+    },
+
+
+    /* =====================================================
+       LOAD USER
+    ===================================================== */
+
+    async loadUser(
+        user
+    ) {
+
+        if (!user) {
+
+            this.currentUser =
+                null;
+
+            this.profile =
+                null;
+
+            return;
+
+        }
+
+
+        this.currentUser =
+            user;
+
+
+        /*
+         * Load profile.
+         */
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("profiles")
+                .select("*")
+                .eq(
+                    "id",
+                    user.id
+                )
+                .maybeSingle();
+
+
+        if (error) {
+
+            console.error(
+                "Profile loading error:",
+                error
+            );
+
+            return;
+
+        }
+
+
+        if (!data) {
+
+            /*
+             * Profile doesn't exist yet.
+             */
+
+            await this.createProfile(
+                user,
+                user.user_metadata?.username ||
+                user.email?.split("@")[0] ||
+                "Player"
+            );
+
+
+            return this.loadUser(
+                user
+            );
+
+        }
+
+
+        this.profile =
+            data;
+
+
+        /*
+         * Combine user + profile.
+         */
+
+        this.currentUser = {
+
+            ...user,
+
+            ...data
+
+        };
+
+    },
+
+
+    /* =====================================================
+       CREATE PROFILE
+    ===================================================== */
+
+    async createProfile(
+        user,
+        username
+    ) {
+
+        const email =
+            user.email?.toLowerCase() || "";
+
+
+        const isAdmin =
+            email ===
+            "garfield678521@gmail.com";
+
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("profiles")
+                .insert({
+
+                    id:
+                        user.id,
+
+                    username:
+                        username,
+
+                    coins:
+                        100,
+
+                    skins:
+                        ["default"],
+
+                    selected_skin:
+                        "default",
+
+                    badges:
+                        [],
+
+                    quizzes_created:
+                        0,
+
+                    quizzes_played:
+                        0,
+
+                    total_score:
+                        0,
+
+                    is_admin:
+                        isAdmin
+
+                })
+                .select()
+                .single();
+
+
+        if (error) {
+
+            /*
+             * Profile might already exist.
+             */
+
+            if (
+                error.code !==
+                "23505"
+            ) {
+
+                console.error(
+                    "Profile creation error:",
                     error
                 );
 
             }
 
-        }
-
-
-        return true;
-
-    },
-
-
-    /* =====================================================
-       SAVE SESSION
-    ===================================================== */
-
-    saveSession() {
-
-        if (!this.currentUser) {
-
-            return false;
+            return null;
 
         }
 
 
-        sessionStorage.setItem(
+        this.profile =
+            data;
 
-            QUIZFORGE_AUTH_CONFIG
-                .SESSION_STORAGE_KEY,
 
-            JSON.stringify(
-                this.currentUser
-            )
-
-        );
-
-
-        return true;
-
-    },
-
-
-    /* =====================================================
-       RESTORE SESSION
-    ===================================================== */
-
-    restoreSession() {
-
-        let saved =
-            sessionStorage.getItem(
-
-                QUIZFORGE_AUTH_CONFIG
-                    .SESSION_STORAGE_KEY
-
-            );
-
-
-        /*
-         * Compatibility with older version.
-         */
-
-        if (!saved) {
-
-            saved =
-                localStorage.getItem(
-
-                    QUIZFORGE_AUTH_CONFIG
-                        .SESSION_STORAGE_KEY
-
-                );
-
-        }
-
-
-        if (!saved) {
-
-            this.currentUser = null;
-
-            return false;
-
-        }
-
-
-        try {
-
-            const sessionUser =
-                JSON.parse(saved);
-
-
-            const users =
-                this.getUsers();
-
-
-            const actualUser =
-                users.find(
-                    user =>
-                        user.id ===
-                        sessionUser.id
-                );
-
-
-            if (!actualUser) {
-
-                this.currentUser = null;
-
-                this.clearSession();
-
-                return false;
-
-            }
-
-
-            /*
-             * Load the latest account data.
-             */
-
-            this.currentUser =
-                JSON.parse(
-                    JSON.stringify(
-                        actualUser
-                    )
-                );
-
-
-            this.currentUser.isAdmin =
-                this.currentUser.email
-                    .toLowerCase() ===
-                QUIZFORGE_AUTH_CONFIG
-                    .ADMIN_EMAIL
-                    .toLowerCase();
-
-
-            this.saveSession();
-
-            return true;
-
-        }
-
-        catch (error) {
-
-            console.error(
-                "QuizForge: Invalid session.",
-                error
-            );
-
-
-            this.currentUser = null;
-
-            this.clearSession();
-
-            return false;
-
-        }
-
-    },
-
-
-    /* =====================================================
-       CLEAR SESSION
-    ===================================================== */
-
-    clearSession() {
-
-        sessionStorage.removeItem(
-
-            QUIZFORGE_AUTH_CONFIG
-                .SESSION_STORAGE_KEY
-
-        );
-
-
-        localStorage.removeItem(
-
-            QUIZFORGE_AUTH_CONFIG
-                .SESSION_STORAGE_KEY
-
-        );
-
-
-        localStorage.removeItem(
-            "quizforge_user"
-        );
+        return data;
 
     },
 
@@ -927,8 +674,7 @@ const Auth = {
        CHANGE PASSWORD
     ===================================================== */
 
-    changePassword(
-        currentPassword,
+    async changePassword(
         newPassword,
         confirmPassword
     ) {
@@ -942,81 +688,17 @@ const Auth = {
         }
 
 
-        currentPassword =
-            String(
-                currentPassword || ""
-            );
-
-
-        newPassword =
-            String(
-                newPassword || ""
-            );
-
-
-        confirmPassword =
-            String(
-                confirmPassword || ""
-            );
-
-
-        /* -----------------------------------------------
-           CURRENT PASSWORD
-        ------------------------------------------------ */
-
-        if (!currentPassword) {
-
-            throw new Error(
-                "Please enter your current password."
-            );
-
-        }
-
-
         if (
-            currentPassword !==
-            this.currentUser.password
+            !newPassword ||
+            newPassword.length < 6
         ) {
 
             throw new Error(
-                "Your current password is incorrect."
+                "Password must be at least 6 characters."
             );
 
         }
 
-
-        /* -----------------------------------------------
-           NEW PASSWORD
-        ------------------------------------------------ */
-
-        if (!newPassword) {
-
-            throw new Error(
-                "Please enter a new password."
-            );
-
-        }
-
-
-        if (
-            !this.isValidPassword(
-                newPassword
-            )
-        ) {
-
-            throw new Error(
-                `Your new password must be at least ${
-                    QUIZFORGE_AUTH_CONFIG
-                        .MIN_PASSWORD_LENGTH
-                } characters.`
-            );
-
-        }
-
-
-        /* -----------------------------------------------
-           CONFIRM
-        ------------------------------------------------ */
 
         if (
             newPassword !==
@@ -1024,73 +706,29 @@ const Auth = {
         ) {
 
             throw new Error(
-                "The new passwords do not match."
+                "The passwords do not match."
             );
 
         }
 
 
-        /* -----------------------------------------------
-           SAME PASSWORD
-        ------------------------------------------------ */
+        const {
+            error
+        } =
+            await supabaseClient.auth
+                .updateUser({
 
-        if (
-            currentPassword ===
-            newPassword
-        ) {
+                    password:
+                        newPassword
 
-            throw new Error(
-                "Your new password must be different."
-            );
-
-        }
+                });
 
 
-        /* -----------------------------------------------
-           FIND USER
-        ------------------------------------------------ */
+        if (error) {
 
-        const users =
-            this.getUsers();
-
-
-        const index =
-            users.findIndex(
-                user =>
-                    user.id ===
-                    this.currentUser.id
-            );
-
-
-        if (index === -1) {
-
-            throw new Error(
-                "Account could not be found."
-            );
+            throw error;
 
         }
-
-
-        /* -----------------------------------------------
-           UPDATE PASSWORD
-        ------------------------------------------------ */
-
-        users[index].password =
-            newPassword;
-
-
-        this.saveUsers(users);
-
-
-        /*
-         * Update current session.
-         */
-
-        this.currentUser.password =
-            newPassword;
-
-
-        this.saveSession();
 
 
         return true;
@@ -1099,127 +737,51 @@ const Auth = {
 
 
     /* =====================================================
-       UPDATE ACCOUNT
+       SEND PASSWORD RESET EMAIL
     ===================================================== */
 
-    updateUser(changes = {}) {
+    async sendPasswordReset(
+        email
+    ) {
 
-        if (!this.currentUser) {
+        email =
+            String(
+                email || ""
+            )
+            .trim()
+            .toLowerCase();
 
-            return false;
+
+        if (!this.isValidEmail(email)) {
+
+            throw new Error(
+                "Please enter a valid email address."
+            );
 
         }
 
 
-        /*
-         * Don't allow users to change their
-         * admin status manually.
-         */
+        const {
+            error
+        } =
+            await supabaseClient.auth
+                .resetPasswordForEmail(
+                    email,
+                    {
 
-        delete changes.isAdmin;
+                        redirectTo:
+                            window.location.origin +
+                            window.location.pathname
 
-
-        /*
-         * Don't allow users to change their
-         * email to impersonate the admin.
-         *
-         * A proper backend should enforce this too.
-         */
-
-        if (
-            changes.email
-        ) {
-
-            changes.email =
-                String(
-                    changes.email
-                )
-                .trim()
-                .toLowerCase();
-
-
-            if (
-                !this.isValidEmail(
-                    changes.email
-                )
-            ) {
-
-                throw new Error(
-                    "Please enter a valid email address."
+                    }
                 );
 
-            }
+
+        if (error) {
+
+            throw error;
 
         }
-
-
-        Object.assign(
-            this.currentUser,
-            changes
-        );
-
-
-        this.currentUser.isAdmin =
-            this.currentUser.email
-                .toLowerCase() ===
-            QUIZFORGE_AUTH_CONFIG
-                .ADMIN_EMAIL
-                .toLowerCase();
-
-
-        this.saveCurrentUser();
-
-        this.updateUI();
-
-
-        return true;
-
-    },
-
-
-    /* =====================================================
-       SAVE CURRENT USER
-    ===================================================== */
-
-    saveCurrentUser() {
-
-        if (!this.currentUser) {
-
-            return false;
-
-        }
-
-
-        const users =
-            this.getUsers();
-
-
-        const index =
-            users.findIndex(
-                user =>
-                    user.id ===
-                    this.currentUser.id
-            );
-
-
-        if (index === -1) {
-
-            return false;
-
-        }
-
-
-        users[index] =
-            JSON.parse(
-                JSON.stringify(
-                    this.currentUser
-                )
-            );
-
-
-        this.saveUsers(users);
-
-        this.saveSession();
 
 
         return true;
@@ -1233,14 +795,18 @@ const Auth = {
 
     getCurrentUser() {
 
-        if (!this.currentUser) {
-
-            return null;
-
-        }
-
-
         return this.currentUser;
+
+    },
+
+
+    /* =====================================================
+       GET PROFILE
+    ===================================================== */
+
+    getProfile() {
+
+        return this.profile;
 
     },
 
@@ -1273,17 +839,15 @@ const Auth = {
 
         return (
             this.currentUser.email
-                .toLowerCase() ===
-            QUIZFORGE_AUTH_CONFIG
-                .ADMIN_EMAIL
-                .toLowerCase()
+                ?.toLowerCase() ===
+            "garfield678521@gmail.com"
         );
 
     },
 
 
     /* =====================================================
-       HAS ADMIN PERMISSION
+       ADMIN PERMISSION
     ===================================================== */
 
     hasPermission(
@@ -1297,82 +861,119 @@ const Auth = {
         }
 
 
-        return (
-            QUIZFORGE_ADMIN_PERMISSIONS[
-                permission
-            ] === true
-        );
+        const permissions = {
 
-    },
+            MANAGE_USERS: true,
 
+            MANAGE_QUIZZES: true,
 
-    /* =====================================================
-       REQUIRE ADMIN
-    ===================================================== */
+            DELETE_PUBLIC_QUIZZES: true,
 
-    requireAdmin(
-        permission = null
-    ) {
+            MANAGE_BADGES: true,
 
-        if (!this.isAdmin()) {
+            MANAGE_SKINS: true,
 
-            throw new Error(
-                "Administrator permission required."
-            );
+            MANAGE_COINS: true,
 
-        }
+            VIEW_RESULTS: true,
 
+            VIEW_STATISTICS: true,
 
-        if (
-            permission &&
-            !this.hasPermission(
-                permission
-            )
-        ) {
+            ADMIN_SETTINGS: true,
 
-            throw new Error(
-                "You do not have permission to perform this action."
-            );
+            MODERATE_LIBRARY: true
 
-        }
-
-
-        return true;
-
-    },
-
-
-    /* =====================================================
-       GET ADMIN PERMISSIONS
-    ===================================================== */
-
-    getAdminPermissions() {
-
-        if (!this.isAdmin()) {
-
-            return {};
-
-        }
-
-
-        return {
-            ...QUIZFORGE_ADMIN_PERMISSIONS
         };
 
+
+        return permissions[
+            permission
+        ] === true;
+
     },
 
 
     /* =====================================================
-       UPDATE COINS
+       UPDATE PROFILE
     ===================================================== */
 
-    addCoins(
+    async updateProfile(
+        changes = {}
+    ) {
+
+        if (!this.currentUser) {
+
+            throw new Error(
+                "You must be logged in."
+            );
+
+        }
+
+
+        /*
+         * Never allow client-side code to
+         * make itself admin.
+         */
+
+        delete changes.is_admin;
+
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("profiles")
+                .update(changes)
+                .eq(
+                    "id",
+                    this.currentUser.id
+                )
+                .select()
+                .single();
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        this.profile =
+            data;
+
+
+        this.currentUser = {
+
+            ...this.currentUser,
+
+            ...data
+
+        };
+
+
+        this.updateUI();
+
+
+        return data;
+
+    },
+
+
+    /* =====================================================
+       ADD COINS
+    ===================================================== */
+
+    async addCoins(
         amount
     ) {
 
         if (!this.currentUser) {
 
-            return false;
+            throw new Error(
+                "You must be logged in."
+            );
 
         }
 
@@ -1385,24 +986,28 @@ const Auth = {
             !Number.isFinite(amount)
         ) {
 
-            return false;
+            throw new Error(
+                "Invalid coin amount."
+            );
 
         }
 
 
-        this.currentUser.coins =
+        const newCoins =
             Math.max(
                 0,
                 Number(
-                    this.currentUser.coins || 0
+                    this.profile?.coins || 0
                 ) + amount
             );
 
 
-        this.saveCurrentUser();
+        return this.updateProfile({
 
+            coins:
+                newCoins
 
-        return this.currentUser.coins;
+        });
 
     },
 
@@ -1411,42 +1016,49 @@ const Auth = {
        ADD SKIN
     ===================================================== */
 
-    addSkin(
+    async addSkin(
         skinID
     ) {
 
         if (!this.currentUser) {
 
-            return false;
+            throw new Error(
+                "You must be logged in."
+            );
 
         }
 
 
+        const skins =
+            Array.isArray(
+                this.profile?.skins
+            )
+                ? [
+                    ...this.profile.skins
+                ]
+                : [
+                    "default"
+                ];
+
+
         if (
-            !this.currentUser.skins
+            !skins.includes(
+                skinID
+            )
         ) {
 
-            this.currentUser.skins = [];
-
-        }
-
-
-        if (
-            !this.currentUser.skins
-                .includes(skinID)
-        ) {
-
-            this.currentUser.skins.push(
+            skins.push(
                 skinID
             );
 
         }
 
 
-        this.saveCurrentUser();
+        return this.updateProfile({
 
+            skins
 
-        return true;
+        });
 
     },
 
@@ -1455,39 +1067,42 @@ const Auth = {
        EQUIP SKIN
     ===================================================== */
 
-    equipSkin(
+    async equipSkin(
         skinID
     ) {
 
         if (!this.currentUser) {
 
-            return false;
-
-        }
-
-
-        if (
-            !this.currentUser.skins ||
-            !this.currentUser.skins.includes(
-                skinID
-            )
-        ) {
-
             throw new Error(
-                "You do not own this skin."
+                "You must be logged in."
             );
 
         }
 
 
-        this.currentUser.selectedSkin =
-            skinID;
+        const skins =
+            this.profile?.skins || [];
 
 
-        this.saveCurrentUser();
+        if (
+            !skins.includes(
+                skinID
+            )
+        ) {
+
+            throw new Error(
+                "You don't own this skin."
+            );
+
+        }
 
 
-        return true;
+        return this.updateProfile({
+
+            selected_skin:
+                skinID
+
+        });
 
     },
 
@@ -1496,342 +1111,100 @@ const Auth = {
        ADD BADGE
     ===================================================== */
 
-    addBadge(
+    async addBadge(
         badgeID
     ) {
 
         if (!this.currentUser) {
 
-            return false;
+            throw new Error(
+                "You must be logged in."
+            );
 
         }
 
 
+        const badges =
+            Array.isArray(
+                this.profile?.badges
+            )
+                ? [
+                    ...this.profile.badges
+                ]
+                : [];
+
+
         if (
-            !this.currentUser.badges
+            !badges.includes(
+                badgeID
+            )
         ) {
 
-            this.currentUser.badges = [];
-
-        }
-
-
-        if (
-            !this.currentUser.badges
-                .includes(badgeID)
-        ) {
-
-            this.currentUser.badges.push(
+            badges.push(
                 badgeID
             );
 
         }
 
 
-        this.saveCurrentUser();
+        return this.updateProfile({
 
+            badges
 
-        return true;
+        });
 
     },
 
 
     /* =====================================================
-       PASSWORD SETTINGS UI
+       EMAIL VALIDATION
     ===================================================== */
 
-    renderPasswordSettings(
-        containerID =
-            "passwordSettings"
+    isValidEmail(
+        email
     ) {
 
-        const container =
+        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i
+            .test(
+                String(
+                    email || ""
+                ).trim()
+            );
+
+    },
+
+
+    /* =====================================================
+       SHOW MESSAGE
+    ===================================================== */
+
+    showMessage(
+        elementID,
+        message,
+        type = "info"
+    ) {
+
+        const element =
             document.getElementById(
-                containerID
+                elementID
             );
 
 
-        if (!container) {
+        if (!element) {
+
+            alert(message);
 
             return;
 
         }
 
 
-        if (!this.currentUser) {
+        element.textContent =
+            message;
 
-            container.innerHTML = `
 
-                <div class="card">
-
-                    <h3>🔐 Login Required</h3>
-
-                    <p>
-                        You must be logged in
-                        to change your password.
-                    </p>
-
-                </div>
-
-            `;
-
-            return;
-
-        }
-
-
-        container.innerHTML = `
-
-            <div class="card">
-
-                <h2>🔑 Change Password</h2>
-
-                <p>
-                    Enter your current password,
-                    then choose a new password.
-                </p>
-
-
-                <form
-                    id="changePasswordForm"
-                    onsubmit="
-                        Auth.handlePasswordChange(event)
-                    "
-                >
-
-                    <label>
-                        Current Password
-                    </label>
-
-                    <input
-                        id="currentPassword"
-                        type="password"
-                        autocomplete="current-password"
-                        required
-                        placeholder="Current password"
-                    >
-
-
-                    <label>
-                        New Password
-                    </label>
-
-                    <input
-                        id="newPassword"
-                        type="password"
-                        autocomplete="new-password"
-                        minlength="6"
-                        required
-                        placeholder="New password"
-                    >
-
-
-                    <label>
-                        Confirm New Password
-                    </label>
-
-                    <input
-                        id="confirmPassword"
-                        type="password"
-                        autocomplete="new-password"
-                        minlength="6"
-                        required
-                        placeholder="Confirm new password"
-                    >
-
-
-                    <button
-                        type="submit"
-                    >
-                        🔒 Change Password
-                    </button>
-
-
-                    <div
-                        id="passwordChangeMessage"
-                    ></div>
-
-                </form>
-
-            </div>
-
-        `;
-
-    },
-
-
-    /* =====================================================
-       HANDLE PASSWORD FORM
-    ===================================================== */
-
-    handlePasswordChange(
-        event
-    ) {
-
-        event.preventDefault();
-
-
-        const current =
-            document.getElementById(
-                "currentPassword"
-            )?.value || "";
-
-
-        const newPassword =
-            document.getElementById(
-                "newPassword"
-            )?.value || "";
-
-
-        const confirm =
-            document.getElementById(
-                "confirmPassword"
-            )?.value || "";
-
-
-        const message =
-            document.getElementById(
-                "passwordChangeMessage"
-            );
-
-
-        try {
-
-            this.changePassword(
-                current,
-                newPassword,
-                confirm
-            );
-
-
-            if (message) {
-
-                message.innerHTML = `
-
-                    <div class="success-message">
-                        ✅ Password changed successfully!
-                    </div>
-
-                `;
-
-            }
-
-
-            document
-                .getElementById(
-                    "changePasswordForm"
-                )
-                ?.reset();
-
-        }
-
-        catch (error) {
-
-            if (message) {
-
-                message.innerHTML = `
-
-                    <div class="error-message">
-                        ❌
-                        ${this.escape(
-                            error.message
-                        )}
-                    </div>
-
-                `;
-
-            }
-
-        }
-
-    },
-
-
-    /* =====================================================
-       RESET VISIBLE UI
-       DOES NOT DELETE DATA
-    ===================================================== */
-
-    resetVisibleUI() {
-
-        const username =
-            document.getElementById(
-                "accountUsername"
-            );
-
-
-        const coins =
-            document.getElementById(
-                "accountCoins"
-            );
-
-
-        const coinCount =
-            document.getElementById(
-                "coinCount"
-            );
-
-
-        if (username) {
-
-            username.textContent =
-                "Guest";
-
-        }
-
-
-        if (coins) {
-
-            coins.textContent =
-                "0";
-
-        }
-
-
-        if (coinCount) {
-
-            coinCount.textContent =
-                "0";
-
-        }
-
-
-        const settings =
-            document.getElementById(
-                "accountSettings"
-            );
-
-
-        if (settings) {
-
-            settings.innerHTML = `
-
-                <div class="card">
-
-                    <h2>🔐 Logged Out</h2>
-
-                    <p>
-                        Log in to view your account.
-                    </p>
-
-                </div>
-
-            `;
-
-        }
-
-
-        const passwordSettings =
-            document.getElementById(
-                "passwordSettings"
-            );
-
-
-        if (passwordSettings) {
-
-            passwordSettings.innerHTML = "";
-
-        }
+        element.className =
+            `auth-message ${type}`;
 
     },
 
@@ -1860,18 +1233,24 @@ const Auth = {
             );
 
 
-        const loginButton =
-            document.getElementById(
-                "loginButton"
-            );
-
-
         if (this.currentUser) {
+
+            const name =
+                this.profile?.username ||
+                this.currentUser.user_metadata
+                    ?.username ||
+                "Player";
+
+
+            const coinValue =
+                this.profile?.coins ||
+                0;
+
 
             if (username) {
 
                 username.textContent =
-                    this.currentUser.username;
+                    name;
 
             }
 
@@ -1879,7 +1258,7 @@ const Auth = {
             if (coins) {
 
                 coins.textContent =
-                    this.currentUser.coins || 0;
+                    coinValue;
 
             }
 
@@ -1887,16 +1266,7 @@ const Auth = {
             if (coinCount) {
 
                 coinCount.textContent =
-                    this.currentUser.coins || 0;
-
-            }
-
-
-            if (loginButton) {
-
-                loginButton.textContent =
-                    "👤 " +
-                    this.currentUser.username;
+                    coinValue;
 
             }
 
@@ -1927,76 +1297,7 @@ const Auth = {
 
             }
 
-
-            if (loginButton) {
-
-                loginButton.textContent =
-                    "🔐 Login";
-
-            }
-
         }
-
-    },
-
-
-    /* =====================================================
-       GENERATE USER ID
-    ===================================================== */
-
-    createID() {
-
-        if (
-            window.crypto &&
-            typeof crypto.randomUUID ===
-            "function"
-        ) {
-
-            return crypto.randomUUID();
-
-        }
-
-
-        return (
-            Date.now() +
-            "-" +
-            Math.random()
-                .toString(36)
-                .substring(2)
-        );
-
-    },
-
-
-    /* =====================================================
-       ESCAPE HTML
-    ===================================================== */
-
-    escape(value) {
-
-        return String(
-            value ?? ""
-        )
-            .replace(
-                /&/g,
-                "&amp;"
-            )
-            .replace(
-                /</g,
-                "&lt;"
-            )
-            .replace(
-                />/g,
-                "&gt;"
-            )
-            .replace(
-                /"/g,
-                "&quot;"
-            )
-            .replace(
-                /'/g,
-                "&#039;"
-            );
 
     }
 
@@ -2004,7 +1305,310 @@ const Auth = {
 
 
 /* =========================================================
-   START AUTH SYSTEM
+   LOGIN FORM
+========================================================= */
+
+async function handleLogin(
+    event
+) {
+
+    event.preventDefault();
+
+
+    const email =
+        document.getElementById(
+            "loginEmail"
+        )?.value || "";
+
+
+    const password =
+        document.getElementById(
+            "loginPassword"
+        )?.value || "";
+
+
+    try {
+
+        await Auth.login(
+            email,
+            password
+        );
+
+
+        Auth.showMessage(
+            "loginMessage",
+            "✅ Login successful!",
+            "success"
+        );
+
+
+        if (
+            typeof showPage ===
+            "function"
+        ) {
+
+            showPage(
+                "home"
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        Auth.showMessage(
+            "loginMessage",
+            "❌ " +
+            error.message,
+            "error"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SIGNUP FORM
+========================================================= */
+
+async function handleSignup(
+    event
+) {
+
+    event.preventDefault();
+
+
+    const username =
+        document.getElementById(
+            "signupUsername"
+        )?.value || "";
+
+
+    const email =
+        document.getElementById(
+            "signupEmail"
+        )?.value || "";
+
+
+    const password =
+        document.getElementById(
+            "signupPassword"
+        )?.value || "";
+
+
+    const confirmPassword =
+        document.getElementById(
+            "signupConfirmPassword"
+        )?.value || "";
+
+
+    try {
+
+        const result =
+            await Auth.signup(
+
+                username,
+
+                email,
+
+                password,
+
+                confirmPassword
+
+            );
+
+
+        if (
+            result.needsVerification
+        ) {
+
+            Auth.showMessage(
+
+                "signupMessage",
+
+                "📧 We've sent you a verification email. Check your inbox and click the verification link.",
+
+                "success"
+
+            );
+
+
+            return;
+
+        }
+
+
+        Auth.showMessage(
+
+            "signupMessage",
+
+            "✅ Account created successfully!",
+
+            "success"
+
+        );
+
+
+        if (
+            typeof showPage ===
+            "function"
+        ) {
+
+            showPage(
+                "home"
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        Auth.showMessage(
+
+            "signupMessage",
+
+            "❌ " +
+            error.message,
+
+            "error"
+
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   CHANGE PASSWORD FORM
+========================================================= */
+
+async function handlePasswordChange(
+    event
+) {
+
+    event.preventDefault();
+
+
+    const newPassword =
+        document.getElementById(
+            "newPassword"
+        )?.value || "";
+
+
+    const confirmPassword =
+        document.getElementById(
+            "confirmPassword"
+        )?.value || "";
+
+
+    try {
+
+        await Auth.changePassword(
+
+            newPassword,
+
+            confirmPassword
+
+        );
+
+
+        Auth.showMessage(
+
+            "passwordMessage",
+
+            "✅ Password changed successfully!",
+
+            "success"
+
+        );
+
+
+        document
+            .getElementById(
+                "changePasswordForm"
+            )
+            ?.reset();
+
+    }
+
+    catch (error) {
+
+        Auth.showMessage(
+
+            "passwordMessage",
+
+            "❌ " +
+            error.message,
+
+            "error"
+
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   PASSWORD RESET FORM
+========================================================= */
+
+async function handlePasswordReset(
+    event
+) {
+
+    event.preventDefault();
+
+
+    const email =
+        document.getElementById(
+            "resetEmail"
+        )?.value || "";
+
+
+    try {
+
+        await Auth.sendPasswordReset(
+            email
+        );
+
+
+        Auth.showMessage(
+
+            "resetMessage",
+
+            "📧 Password reset email sent!",
+
+            "success"
+
+        );
+
+    }
+
+    catch (error) {
+
+        Auth.showMessage(
+
+            "resetMessage",
+
+            "❌ " +
+            error.message,
+
+            "error"
+
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   START
 ========================================================= */
 
 document.addEventListener(
