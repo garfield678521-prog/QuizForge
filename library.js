@@ -1,298 +1,697 @@
 /* =========================================================
    QUIZFORGE LIBRARY
-   My Quizzes / Public Quizzes / Search / Publish
+   SUPABASE VERSION
 ========================================================= */
 
 const QuizLibrary = {
 
+    currentTab: "mine",
 
-    STORAGE_KEY:
-        "quizforge_quizzes",
+    /* =====================================================
+       GET SUPABASE CLIENT
+    ===================================================== */
 
-    PUBLIC_KEY:
-        "quizforge_public_quizzes",
+    getClient() {
+
+        if (window.supabaseClient) {
+            return window.supabaseClient;
+        }
+
+        if (window.supabase) {
+            return window.supabase;
+        }
+
+        console.error(
+            "Supabase client was not found."
+        );
+
+        return null;
+    },
 
 
     /* =====================================================
-       LOCAL QUIZZES
+       GET USER
     ===================================================== */
 
-    getMyQuizzes() {
+    async getUser() {
 
-        try {
+        const supabase =
+            this.getClient();
 
-            return JSON.parse(
-                localStorage.getItem(
-                    this.STORAGE_KEY
-                ) || "[]"
-            );
-
-        } catch {
-
-            return [];
-
+        if (!supabase) {
+            return null;
         }
 
+        const {
+            data,
+            error
+        } =
+            await supabase.auth.getUser();
+
+        if (error) {
+            console.error(error);
+            return null;
+        }
+
+        return data.user;
     },
 
 
-    saveMyQuiz(
-        quiz
-    ) {
+    /* =====================================================
+       SHOW MY QUIZZES
+    ===================================================== */
 
-        const quizzes =
-            this.getMyQuizzes();
+    async showMyQuizzes() {
 
+        this.currentTab = "mine";
 
-        const index =
-            quizzes.findIndex(
-                item =>
-                    item.id ===
-                    quiz.id
-            );
-
-
-        if (index === -1) {
-
-            quizzes.push(
-                quiz
-            );
-
-        } else {
-
-            quizzes[index] =
-                quiz;
-
-        }
-
-
-        localStorage.setItem(
-            this.STORAGE_KEY,
-            JSON.stringify(
-                quizzes
-            )
-        );
-
-        return quiz;
-
-    },
-
-
-    deleteQuiz(
-        id
-    ) {
-
-        let quizzes =
-            this.getMyQuizzes();
-
-
-        quizzes =
-            quizzes.filter(
-                quiz =>
-                    quiz.id !== id
-            );
-
-
-        localStorage.setItem(
-            this.STORAGE_KEY,
-            JSON.stringify(
-                quizzes
-            )
-        );
-
-        this.renderMyQuizzes();
+        await this.loadMyQuizzes();
 
     },
 
 
     /* =====================================================
-       PUBLIC LIBRARY
+       SHOW PUBLIC LIBRARY
     ===================================================== */
 
-    getPublicQuizzes() {
+    async showPublicLibrary() {
 
-        try {
+        this.currentTab = "public";
 
-            return JSON.parse(
-                localStorage.getItem(
-                    this.PUBLIC_KEY
-                ) || "[]"
-            );
-
-        } catch {
-
-            return [];
-
-        }
+        await this.loadPublicQuizzes();
 
     },
 
 
-    publish(
-        quiz
-    ) {
+    /* =====================================================
+       LOAD MY QUIZZES
+    ===================================================== */
 
-        if (
-            typeof Auth === "undefined" ||
-            !Auth.isLoggedIn()
-        ) {
+    async loadMyQuizzes() {
 
-            alert(
-                "🔐 Please log in before publishing."
+        const container =
+            document.getElementById(
+                "quizLibrary"
             );
 
-            return false;
-
-        }
+        if (!container) return;
 
 
-        if (
-            !quiz ||
-            !quiz.title ||
-            !quiz.questions ||
-            !quiz.questions.length
-        ) {
+        container.innerHTML = `
+            <div class="card">
+                <h2>👤 My Quizzes</h2>
+                <p>Loading your quizzes...</p>
+            </div>
+        `;
 
-            alert(
-                "Your quiz is incomplete."
+
+        const supabase =
+            this.getClient();
+
+        if (!supabase) {
+
+            this.showError(
+                "Supabase isn't connected."
             );
 
-            return false;
-
+            return;
         }
 
 
         const user =
-            Auth.currentUser;
+            await this.getUser();
 
 
-        const publicQuizzes =
-            this.getPublicQuizzes();
+        if (!user) {
+
+            container.innerHTML = `
+                <div class="card">
+                    <h2>🔐 Login Required</h2>
+
+                    <p>
+                        Log in to see your quizzes.
+                    </p>
+
+                    <button
+                        class="primary"
+                        onclick="showPage('login')"
+                    >
+                        Login
+                    </button>
+                </div>
+            `;
+
+            return;
+        }
 
 
-        /*
-         * Make a public copy.
-         */
-
-        const publicQuiz = {
-
-            ...JSON.parse(
-                JSON.stringify(
-                    quiz
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from("quizzes")
+                .select("*")
+                .eq(
+                    "user_id",
+                    user.id
                 )
-            ),
-
-            publicID:
-                this.createID(),
-
-            authorID:
-                user.id,
-
-            author:
-                user.username,
-
-            publishedAt:
-                new Date().toISOString(),
-
-            plays: 0,
-
-            likes: 0,
-
-            public: true
-
-        };
+                .order(
+                    "updated_at",
+                    {
+                        ascending: false
+                    }
+                );
 
 
-        publicQuizzes.push(
-            publicQuiz
+        if (error) {
+
+            console.error(
+                "Quiz loading error:",
+                error
+            );
+
+            this.showError(
+                error.message
+            );
+
+            return;
+        }
+
+
+        this.renderQuizzes(
+            data || [],
+            false
         );
-
-
-        localStorage.setItem(
-            this.PUBLIC_KEY,
-            JSON.stringify(
-                publicQuizzes
-            )
-        );
-
-
-        Economy.unlockBadge(
-            "publisher"
-        );
-
-
-        alert(
-            "🌎 Your quiz was published to the public library!"
-        );
-
-
-        this.renderPublicLibrary();
-
-        return publicQuiz;
 
     },
 
 
     /* =====================================================
-       SEARCH
+       LOAD PUBLIC QUIZZES
     ===================================================== */
 
-    search(
-        searchText = "",
-        category = "all"
-    ) {
+    async loadPublicQuizzes() {
 
-        const quizzes =
-            this.getPublicQuizzes();
+        const container =
+            document.getElementById(
+                "quizLibrary"
+            );
 
-
-        searchText =
-            searchText
-                .toLowerCase()
-                .trim();
+        if (!container) return;
 
 
-        return quizzes.filter(
-            quiz => {
-
-                const matchesText =
-                    !searchText ||
-                    quiz.title
-                        .toLowerCase()
-                        .includes(
-                            searchText
-                        ) ||
-                    (
-                        quiz.description ||
-                        ""
-                    )
-                        .toLowerCase()
-                        .includes(
-                            searchText
-                        ) ||
-                    (
-                        quiz.author ||
-                        ""
-                    )
-                        .toLowerCase()
-                        .includes(
-                            searchText
-                        );
+        container.innerHTML = `
+            <div class="card">
+                <h2>🌎 Public Library</h2>
+                <p>Loading quizzes from around the world...</p>
+            </div>
+        `;
 
 
-                const matchesCategory =
-                    category === "all" ||
-                    quiz.category ===
-                    category;
+        const supabase =
+            this.getClient();
+
+        if (!supabase) {
+
+            this.showError(
+                "Supabase isn't connected."
+            );
+
+            return;
+        }
 
 
-                return (
-                    matchesText &&
-                    matchesCategory
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from("quizzes")
+                .select("*")
+                .eq(
+                    "is_public",
+                    true
+                )
+                .order(
+                    "plays",
+                    {
+                        ascending: false
+                    }
                 );
 
-            }
+
+        if (error) {
+
+            console.error(error);
+
+            this.showError(
+                error.message
+            );
+
+            return;
+        }
+
+
+        this.renderQuizzes(
+            data || [],
+            true
         );
+
+    },
+
+
+    /* =====================================================
+       RENDER
+    ===================================================== */
+
+    renderQuizzes(
+        quizzes,
+        isPublic
+    ) {
+
+        const container =
+            document.getElementById(
+                "quizLibrary"
+            );
+
+        if (!container) return;
+
+
+        if (!quizzes.length) {
+
+            container.innerHTML = `
+
+                <div class="card">
+
+                    <h2>
+                        ${
+                            isPublic
+                                ? "🌎 No Public Quizzes Yet"
+                                : "👤 No Quizzes Yet"
+                        }
+                    </h2>
+
+                    <p>
+                        ${
+                            isPublic
+                                ? "Be the first to publish a quiz!"
+                                : "Create your first quiz."
+                        }
+                    </p>
+
+                    <button
+                        class="primary"
+                        onclick="openQuizCreator()"
+                    >
+                        ➕ Create Quiz
+                    </button>
+
+                </div>
+
+            `;
+
+            return;
+        }
+
+
+        container.innerHTML = `
+
+            <div class="library-grid">
+
+                ${quizzes
+                    .map(
+                        quiz =>
+                            this.createQuizCard(
+                                quiz,
+                                isPublic
+                            )
+                    )
+                    .join("")}
+
+            </div>
+
+        `;
+
+    },
+
+
+    /* =====================================================
+       QUIZ CARD
+    ===================================================== */
+
+    createQuizCard(
+        quiz,
+        isPublic
+    ) {
+
+        const questionCount =
+            Array.isArray(
+                quiz.questions
+            )
+                ? quiz.questions.length
+                : 0;
+
+
+        return `
+
+            <div class="card quiz-card">
+
+                <h2>
+                    ${this.escape(
+                        quiz.title ||
+                        "Untitled Quiz"
+                    )}
+                </h2>
+
+
+                <p>
+                    ${this.escape(
+                        quiz.description ||
+                        "No description"
+                    )}
+                </p>
+
+
+                <div class="quiz-meta">
+
+                    <span>
+                        ❓ ${questionCount}
+                        questions
+                    </span>
+
+                    <span>
+                        🎮 ${quiz.plays || 0}
+                        plays
+                    </span>
+
+                </div>
+
+
+                <p>
+                    👤 ${this.escape(
+                        quiz.author ||
+                        "Unknown"
+                    )}
+                </p>
+
+
+                <button
+                    class="primary"
+                    onclick="QuizLibrary.playQuiz(
+                        '${quiz.id}'
+                    )"
+                >
+                    🎮 Play
+                </button>
+
+
+                ${
+                    !isPublic
+                        ? `
+                            <button
+                                onclick="QuizLibrary.editQuiz(
+                                    '${quiz.id}'
+                                )"
+                            >
+                                ✏️ Edit
+                            </button>
+
+                            <button
+                                onclick="QuizLibrary.publishQuiz(
+                                    '${quiz.id}'
+                                )"
+                            >
+                                🌎 Publish
+                            </button>
+                        `
+                        : ""
+                }
+
+            </div>
+
+        `;
+
+    },
+
+
+    /* =====================================================
+       SAVE QUIZ TO SUPABASE
+    ===================================================== */
+
+    async saveQuiz(
+        quiz
+    ) {
+
+        const supabase =
+            this.getClient();
+
+        if (!supabase) {
+            throw new Error(
+                "Supabase unavailable."
+            );
+        }
+
+
+        const user =
+            await this.getUser();
+
+
+        if (!user) {
+
+            throw new Error(
+                "You must be logged in."
+            );
+
+        }
+
+
+        const row = {
+
+            user_id:
+                user.id,
+
+            title:
+                quiz.title ||
+                "Untitled Quiz",
+
+            description:
+                quiz.description ||
+                "",
+
+            author:
+                user.user_metadata?.username ||
+                user.email ||
+                "Player",
+
+            questions:
+                quiz.questions ||
+                [],
+
+            is_public:
+                quiz.is_public ||
+                false,
+
+            updated_at:
+                new Date().toISOString()
+
+        };
+
+
+        let result;
+
+
+        if (quiz.id) {
+
+            result =
+                await supabase
+                    .from("quizzes")
+                    .update(row)
+                    .eq(
+                        "id",
+                        quiz.id
+                    )
+                    .eq(
+                        "user_id",
+                        user.id
+                    )
+                    .select()
+                    .single();
+
+        }
+
+        else {
+
+            result =
+                await supabase
+                    .from("quizzes")
+                    .insert(row)
+                    .select()
+                    .single();
+
+        }
+
+
+        if (result.error) {
+
+            throw result.error;
+
+        }
+
+
+        return result.data;
+
+    },
+
+
+    /* =====================================================
+       PUBLISH
+    ===================================================== */
+
+    async publishQuiz(
+        quizID
+    ) {
+
+        const supabase =
+            this.getClient();
+
+        const user =
+            await this.getUser();
+
+
+        if (!user) {
+
+            alert(
+                "Please log in first."
+            );
+
+            return;
+
+        }
+
+
+        const {
+            error
+        } =
+            await supabase
+                .from("quizzes")
+                .update({
+                    is_public: true,
+                    updated_at:
+                        new Date().toISOString()
+                })
+                .eq(
+                    "id",
+                    quizID
+                )
+                .eq(
+                    "user_id",
+                    user.id
+                );
+
+
+        if (error) {
+
+            alert(
+                "Could not publish quiz:\n" +
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            "🌎 Your quiz is now public!"
+        );
+
+
+        await this.loadMyQuizzes();
+
+    },
+
+
+    /* =====================================================
+       EDIT
+    ===================================================== */
+
+    async editQuiz(
+        quizID
+    ) {
+
+        const supabase =
+            this.getClient();
+
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from("quizzes")
+                .select("*")
+                .eq(
+                    "id",
+                    quizID
+                )
+                .single();
+
+
+        if (error) {
+
+            alert(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        currentQuiz = {
+
+            format:
+                "QuizForge",
+
+            version:
+                1,
+
+            id:
+                data.id,
+
+            title:
+                data.title,
+
+            description:
+                data.description,
+
+            author:
+                data.author,
+
+            questions:
+                data.questions || [],
+
+            createdAt:
+                data.created_at,
+
+            updatedAt:
+                data.updated_at
+
+        };
+
+
+        showPage("create");
+
+
+        if (
+            typeof renderQuizEditor ===
+            "function"
+        ) {
+
+            renderQuizEditor();
+
+        }
 
     },
 
@@ -301,26 +700,32 @@ const QuizLibrary = {
        PLAY
     ===================================================== */
 
-    play(
-        id
+    async playQuiz(
+        quizID
     ) {
 
-        const quizzes =
-            this.getPublicQuizzes();
+        const supabase =
+            this.getClient();
 
 
-        const quiz =
-            quizzes.find(
-                item =>
-                    item.publicID === id ||
-                    item.id === id
-            );
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from("quizzes")
+                .select("*")
+                .eq(
+                    "id",
+                    quizID
+                )
+                .single();
 
 
-        if (!quiz) {
+        if (error) {
 
             alert(
-                "Quiz not found."
+                error.message
             );
 
             return;
@@ -328,26 +733,39 @@ const QuizLibrary = {
         }
 
 
-        quiz.plays =
-            (quiz.plays || 0) + 1;
+        /*
+         * Increase play count.
+         */
 
-
-        localStorage.setItem(
-            this.PUBLIC_KEY,
-            JSON.stringify(
-                quizzes
-            )
-        );
+        await supabase
+            .from("quizzes")
+            .update({
+                plays:
+                    (data.plays || 0) + 1
+            })
+            .eq(
+                "id",
+                quizID
+            );
 
 
         if (
-            typeof QuizPlayer !==
-            "undefined"
+            typeof startQuiz ===
+            "function"
         ) {
 
-            QuizPlayer.start(
-                quiz
+            startQuiz(
+                data
             );
+
+        }
+
+        else {
+
+            window.selectedQuiz =
+                data;
+
+            showPage("play");
 
         }
 
@@ -355,254 +773,58 @@ const QuizLibrary = {
 
 
     /* =====================================================
-       RENDER MY QUIZZES
+       ERROR
     ===================================================== */
 
-    renderMyQuizzes(
-        containerID =
-            "myQuizLibrary"
+    showError(
+        message
     ) {
 
         const container =
             document.getElementById(
-                containerID
+                "quizLibrary"
             );
 
         if (!container) return;
 
 
-        const quizzes =
-            this.getMyQuizzes();
+        container.innerHTML = `
 
+            <div class="card">
 
-        if (!quizzes.length) {
+                <h2>
+                    ❌ Library Error
+                </h2>
 
-            container.innerHTML = `
+                <p>
+                    ${this.escape(
+                        message
+                    )}
+                </p>
 
-                <div class="card">
+                <button
+                    onclick="QuizLibrary.showMyQuizzes()"
+                >
+                    🔄 Try Again
+                </button>
 
-                    <h2>
-                        📚 No quizzes yet
-                    </h2>
+            </div>
 
-                    <p>
-                        Create your first quiz!
-                    </p>
-
-                </div>
-
-            `;
-
-            return;
-
-        }
-
-
-        container.innerHTML =
-            quizzes
-                .map(
-                    quiz => `
-
-                        <div class="quiz-card">
-
-                            <h3>
-                                ${this.escape(
-                                    quiz.title ||
-                                    "Untitled Quiz"
-                                )}
-                            </h3>
-
-                            <p>
-                                ${
-                                    quiz.questions.length
-                                }
-                                questions
-                            </p>
-
-                            <div>
-
-                                <button
-                                    onclick="
-                                        QuizEditor.loadQuiz(
-                                            '${quiz.id}'
-                                        )
-                                    "
-                                >
-                                    ✏️ Edit
-                                </button>
-
-                                <button
-                                    onclick="
-                                        QuizPlayer.start(
-                                            ${JSON.stringify(
-                                                quiz
-                                            ).replace(
-                                                /"/g,
-                                                "&quot;"
-                                            )}
-                                        )
-                                    "
-                                >
-                                    ▶ Play
-                                </button>
-
-                                <button
-                                    class="danger"
-                                    onclick="
-                                        QuizLibrary.deleteQuiz(
-                                            '${quiz.id}'
-                                        )
-                                    "
-                                >
-                                    🗑️
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    `
-                )
-                .join("");
+        `;
 
     },
 
 
     /* =====================================================
-       RENDER PUBLIC LIBRARY
+       ESCAPE
     ===================================================== */
-
-    renderPublicLibrary(
-        containerID =
-            "libraryGrid"
-    ) {
-
-        const container =
-            document.getElementById(
-                containerID
-            );
-
-        if (!container) return;
-
-
-        const quizzes =
-            this.search();
-
-
-        if (!quizzes.length) {
-
-            container.innerHTML = `
-
-                <div class="card">
-
-                    <h2>
-                        🌎 Public Library
-                    </h2>
-
-                    <p>
-                        No public quizzes yet.
-                    </p>
-
-                </div>
-
-            `;
-
-            return;
-
-        }
-
-
-        container.innerHTML =
-            quizzes
-                .map(
-                    quiz => `
-
-                        <div class="quiz-card">
-
-                            <h3>
-                                ${this.escape(
-                                    quiz.title
-                                )}
-                            </h3>
-
-                            <p>
-                                ${this.escape(
-                                    quiz.description ||
-                                    "No description"
-                                )}
-                            </p>
-
-                            <small>
-                                👤
-                                ${this.escape(
-                                    quiz.author ||
-                                    "Unknown"
-                                )}
-                            </small>
-
-                            <br>
-
-                            <small>
-                                🌎
-                                ${quiz.plays || 0}
-                                plays
-                            </small>
-
-                            <br><br>
-
-                            <button
-                                class="primary"
-                                onclick="
-                                    QuizLibrary.play(
-                                        '${quiz.publicID}'
-                                    )
-                                "
-                            >
-                                ▶ Play
-                            </button>
-
-                        </div>
-
-                    `
-                )
-                .join("");
-
-    },
-
-
-    /* =====================================================
-       ID
-    ===================================================== */
-
-    createID() {
-
-        if (
-            crypto &&
-            crypto.randomUUID
-        ) {
-
-            return crypto.randomUUID();
-
-        }
-
-
-        return (
-            Date.now() +
-            "-" +
-            Math.random()
-                .toString(36)
-                .slice(2)
-        );
-
-    },
-
 
     escape(
-        value
+        text
     ) {
 
         return String(
-            value || ""
+            text ?? ""
         )
             .replace(
                 /&/g,
@@ -630,17 +852,48 @@ const QuizLibrary = {
 };
 
 
+/* =========================================================
+   COMPATIBILITY FUNCTIONS
+========================================================= */
+
+async function loadMyQuizzes() {
+
+    await QuizLibrary.showMyQuizzes();
+
+}
+
+
+async function loadPublicLibrary() {
+
+    await QuizLibrary.showPublicLibrary();
+
+}
+
+
+async function loadPublicQuizzes() {
+
+    await QuizLibrary.showPublicLibrary();
+
+}
+
+
 /*
- * Load library when page loads.
+ * IMPORTANT:
+ * Library defaults to YOUR quizzes.
  */
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
+    function() {
 
-        QuizLibrary.renderMyQuizzes();
+        setTimeout(
+            function() {
 
-        QuizLibrary.renderPublicLibrary();
+                QuizLibrary.showMyQuizzes();
+
+            },
+            300
+        );
 
     }
 );
