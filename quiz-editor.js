@@ -1,456 +1,816 @@
 /* =========================================================
    QUIZFORGE QUIZ EDITOR
-   CREATE • EDIT • IMPORT • EXPORT
+   Creates blank quizzes + edits + saves
 ========================================================= */
 
 let currentQuiz = null;
 
 
 /* =========================================================
-   CREATE NEW BLANK QUIZ
+   CREATE A BRAND NEW BLANK QUIZ
 ========================================================= */
 
 function createNewQuiz() {
 
     currentQuiz = {
-        format: "QuizForge",
-        version: 1,
-        id: generateID(),
+
+        id: null,
+
         title: "",
+
         description: "",
-        author: "",
+
         questions: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+
+        is_public: false
+
     };
+
 
     renderQuizEditor();
+
+    showPage("create");
+
 }
 
 
 /* =========================================================
-   ID
+   RENDER EDITOR
 ========================================================= */
 
-function generateID() {
+function renderQuizEditor() {
 
-    if (
-        window.crypto &&
-        typeof crypto.randomUUID === "function"
-    ) {
-        return crypto.randomUUID();
-    }
-
-    return (
-        Date.now().toString(36) +
-        Math.random()
-            .toString(36)
-            .substring(2)
-    );
-}
-
-
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
-
-function escapeHTML(value) {
-
-    if (value === null || value === undefined) {
-        return "";
-    }
-
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-
-/* =========================================================
-   OPEN IMPORT FILE
-========================================================= */
-
-function openImportFile() {
-
-    let input =
+    const editor =
         document.getElementById(
-            "hiddenQuizFileInput"
+            "quizEditor"
         );
 
-    /*
-     * If the hidden input doesn't exist,
-     * create one automatically.
-     */
 
-    if (!input) {
-
-        input =
-            document.createElement("input");
-
-        input.type = "file";
-
-        input.id =
-            "hiddenQuizFileInput";
-
-        input.accept =
-            ".qz,.json,application/json";
-
-        input.style.display =
-            "none";
-
-        document.body.appendChild(input);
-
-        input.addEventListener(
-            "change",
-            importQuizFile
-        );
-    }
-
-    /*
-     * Clear previous selection.
-     * This allows the same file to be
-     * imported again.
-     */
-
-    input.value = "";
-
-    input.click();
-}
-
-
-/* =========================================================
-   IMPORT .QZ
-========================================================= */
-
-function importQuizFile(event) {
-
-    const input =
-        event.target;
-
-    const file =
-        input.files &&
-        input.files[0];
-
-    if (!file) {
+    if (!editor) {
         return;
     }
 
 
-    /*
-     * Accept .qz and JSON files.
-     */
+    if (!currentQuiz) {
 
-    const fileName =
-        file.name.toLowerCase();
+        editor.innerHTML = `
 
-    const isQZ =
-        fileName.endsWith(".qz");
+            <div class="card">
 
-    const isJSON =
-        fileName.endsWith(".json");
+                <h2>
+                    🆕 Create a Quiz
+                </h2>
 
+                <p>
+                    Start with a blank quiz.
+                </p>
 
-    if (!isQZ && !isJSON) {
+                <button
+                    class="primary"
+                    onclick="createNewQuiz()"
+                >
+                    ➕ Create Blank Quiz
+                </button>
 
-        alert(
-            "❌ Please select a .qz quiz file."
-        );
+            </div>
 
-        input.value = "";
+        `;
 
         return;
+
     }
 
 
-    const reader =
-        new FileReader();
+    editor.innerHTML = `
 
+        <div class="card">
 
-    reader.onload = function(e) {
+            <div class="editor-top">
 
-        try {
+                <div>
 
-            const text =
-                e.target.result;
+                    <h1>
+                        📝 Quiz Editor
+                    </h1>
 
+                    ${
+                        currentQuiz.id
+                            ? "<small>Editing saved quiz</small>"
+                            : "<small>New quiz</small>"
+                    }
 
-            if (
-                !text ||
-                text.trim() === ""
-            ) {
+                </div>
 
-                throw new Error(
-                    "The file is empty."
-                );
 
-            }
+                <div class="editor-actions">
 
+                    <button
+                        onclick="createNewQuiz()"
+                    >
+                        🆕 New
+                    </button>
 
-            /*
-             * .qz files contain JSON.
-             */
 
-            const quiz =
-                JSON.parse(text);
+                    <button
+                        onclick="exportCurrentQuiz()"
+                    >
+                        📤 Export .qz
+                    </button>
 
 
-            validateImportedQuiz(
-                quiz
-            );
+                    <button
+                        onclick="openImportFile()"
+                    >
+                        📥 Import .qz
+                    </button>
 
 
-            /*
-             * Make sure required fields
-             * exist.
-             */
+                    <button
+                        class="primary"
+                        onclick="saveCurrentQuiz()"
+                    >
+                        💾 Save Quiz
+                    </button>
 
-            if (
-                !Array.isArray(
-                    quiz.questions
-                )
-            ) {
+                </div>
 
-                quiz.questions = [];
+            </div>
 
-            }
 
+            <hr>
 
-            if (!quiz.format) {
 
-                quiz.format =
-                    "QuizForge";
+            <label>
+                Quiz Title
+            </label>
 
-            }
+            <input
+                id="quizTitle"
+                type="text"
+                placeholder="My Awesome Quiz"
+                value="${escapeHTML(
+                    currentQuiz.title
+                )}"
+                oninput="
+                    currentQuiz.title =
+                        this.value
+                "
+            >
 
 
-            if (!quiz.version) {
+            <label>
+                Description
+            </label>
 
-                quiz.version = 1;
+            <textarea
+                id="quizDescription"
+                placeholder="What is this quiz about?"
+                oninput="
+                    currentQuiz.description =
+                        this.value
+                "
+            >${escapeHTML(
+                currentQuiz.description
+            )}</textarea>
 
-            }
 
+            <label>
 
-            if (!quiz.id) {
+                <input
+                    type="checkbox"
+                    id="quizPublic"
+                    ${
+                        currentQuiz.is_public
+                            ? "checked"
+                            : ""
+                    }
+                    onchange="
+                        currentQuiz.is_public =
+                            this.checked
+                    "
+                    style="width:auto;"
+                >
 
-                quiz.id =
-                    generateID();
+                🌎 Publish to Public Library
 
-            }
+            </label>
 
+        </div>
 
-            if (!quiz.title) {
 
-                quiz.title =
-                    "Imported Quiz";
+        <div
+            id="questionsContainer"
+        ></div>
 
-            }
 
+        <div class="card">
 
-            /*
-             * Save imported quiz
-             * into the editor.
-             */
+            <button
+                class="primary"
+                onclick="addQuestion()"
+            >
+                ➕ Add Question
+            </button>
 
-            currentQuiz =
-                quiz;
+        </div>
 
+    `;
 
-            currentQuiz.updatedAt =
-                new Date().toISOString();
 
+    renderQuestions();
 
-            /*
-             * Open creator.
-             */
-
-            if (
-                typeof showPage ===
-                "function"
-            ) {
-
-                showPage("create");
-
-            }
-
-
-            renderQuizEditor();
-
-
-            alert(
-                "✅ Quiz imported successfully!"
-            );
-
-        }
-
-        catch(error) {
-
-            console.error(
-                "Quiz import error:",
-                error
-            );
-
-
-            alert(
-                "❌ Could not import this file.\n\n" +
-                "Make sure it is a valid QuizForge .qz file."
-            );
-
-        }
-
-
-        input.value = "";
-
-    };
-
-
-    reader.onerror =
-        function() {
-
-            alert(
-                "❌ Could not read the file."
-            );
-
-            input.value = "";
-
-        };
-
-
-    reader.readAsText(
-        file
-    );
 }
 
 
 /* =========================================================
-   VALIDATE IMPORTED QUIZ
+   RENDER QUESTIONS
 ========================================================= */
 
-function validateImportedQuiz(quiz) {
+function renderQuestions() {
+
+    const container =
+        document.getElementById(
+            "questionsContainer"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
 
     if (
-        !quiz ||
-        typeof quiz !== "object" ||
-        Array.isArray(quiz)
+        !currentQuiz.questions.length
     ) {
 
-        throw new Error(
-            "Invalid quiz format."
-        );
+        container.innerHTML = `
+
+            <div class="card empty-state">
+
+                <h2>
+                    ❓ No questions yet
+                </h2>
+
+                <p>
+                    Add your first question below.
+                </p>
+
+                <button
+                    class="primary"
+                    onclick="addQuestion()"
+                >
+                    ➕ Add Question
+                </button>
+
+            </div>
+
+        `;
+
+        return;
 
     }
 
 
+    container.innerHTML =
+        currentQuiz.questions
+            .map(
+                (
+                    question,
+                    index
+                ) =>
+                    renderQuestion(
+                        question,
+                        index
+                    )
+            )
+            .join("");
+
+}
+
+
+/* =========================================================
+   QUESTION
+========================================================= */
+
+function renderQuestion(
+    question,
+    index
+) {
+
     /*
-     * Allow older QuizForge files
-     * without strict format checking.
+     * Make sure every question has
+     * four answer slots.
      */
 
     if (
-        quiz.questions !== undefined &&
         !Array.isArray(
-            quiz.questions
+            question.answers
         )
     ) {
 
-        throw new Error(
-            "Questions must be an array."
-        );
+        question.answers = [];
 
     }
+
+
+    while (
+        question.answers.length < 4
+    ) {
+
+        question.answers.push("");
+
+    }
+
+
+    question.answers =
+        question.answers.slice(
+            0,
+            4
+        );
+
+
+    if (
+        typeof question.correctAnswer !==
+        "number"
+    ) {
+
+        question.correctAnswer =
+            0;
+
+    }
+
+
+    return `
+
+        <div
+            class="card question-card"
+        >
+
+            <div class="question-header">
+
+                <h2>
+                    Question ${index + 1}
+                </h2>
+
+
+                <button
+                    class="danger"
+                    onclick="
+                        deleteQuestion(
+                            ${index}
+                        )
+                    "
+                >
+                    🗑️ Delete
+                </button>
+
+            </div>
+
+
+            <label>
+                Question
+            </label>
+
+            <textarea
+                placeholder="Type your question here..."
+                oninput="
+                    currentQuiz.questions[
+                        ${index}
+                    ].question =
+                        this.value
+                "
+            >${escapeHTML(
+                question.question ||
+                ""
+            )}</textarea>
+
+
+            <h3>
+                Answers
+            </h3>
+
+
+            ${question.answers
+                .map(
+                    (
+                        answer,
+                        answerIndex
+                    ) => `
+
+                        <div
+                            class="answer-row"
+                        >
+
+                            <input
+                                type="radio"
+                                name="correct-${index}"
+                                ${
+                                    question.correctAnswer ===
+                                    answerIndex
+                                        ? "checked"
+                                        : ""
+                                }
+                                onchange="
+                                    currentQuiz.questions[
+                                        ${index}
+                                    ].correctAnswer =
+                                        ${answerIndex}
+                                "
+                            >
+
+
+                            <input
+                                type="text"
+                                placeholder="Answer ${
+                                    answerIndex + 1
+                                }"
+                                value="${escapeHTML(
+                                    answer
+                                )}"
+                                oninput="
+                                    currentQuiz.questions[
+                                        ${index}
+                                    ].answers[
+                                        ${answerIndex}
+                                    ] =
+                                        this.value
+                                "
+                            >
+
+                        </div>
+
+                    `
+                )
+                .join("")}
+
+
+            <p>
+                💡 Select the radio button next
+                to the correct answer.
+            </p>
+
+        </div>
+
+    `;
 
 }
 
 
 /* =========================================================
-   EXPORT QUIZ
+   ADD QUESTION
 ========================================================= */
 
-function exportQuiz() {
+function addQuestion() {
+
+    if (!currentQuiz) {
+
+        createNewQuiz();
+
+    }
+
+
+    currentQuiz.questions.push({
+
+        question: "",
+
+        answers: [
+            "",
+            "",
+            "",
+            ""
+        ],
+
+        correctAnswer: 0
+
+    });
+
+
+    renderQuestions();
+
 
     /*
-     * Don't export nothing.
+     * Scroll to the new question.
      */
+
+    setTimeout(
+        () => {
+
+            const questions =
+                document.querySelectorAll(
+                    ".question-card"
+                );
+
+
+            const last =
+                questions[
+                    questions.length - 1
+                ];
+
+
+            last?.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+
+        },
+        50
+    );
+
+}
+
+
+/* =========================================================
+   DELETE QUESTION
+========================================================= */
+
+function deleteQuestion(
+    index
+) {
+
+    if (
+        !confirm(
+            `Delete question ${
+                index + 1
+            }?`
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    currentQuiz.questions
+        .splice(
+            index,
+            1
+        );
+
+
+    renderQuestions();
+
+}
+
+
+/* =========================================================
+   VALIDATE QUIZ
+========================================================= */
+
+function validateQuiz() {
 
     if (!currentQuiz) {
 
         alert(
-            "❌ There is no quiz to export.\n\n" +
-            "Create or import a quiz first."
+            "Create a quiz first."
         );
 
-        return;
+        return false;
+
     }
 
 
-    /*
-     * Update quiz metadata.
-     */
-
-    currentQuiz.updatedAt =
-        new Date().toISOString();
-
-
-    /*
-     * Get current title.
-     */
-
-    const titleInput =
+    currentQuiz.title =
         document.getElementById(
             "quizTitle"
+        )?.value.trim() ||
+        currentQuiz.title.trim();
+
+
+    currentQuiz.description =
+        document.getElementById(
+            "quizDescription"
+        )?.value.trim() ||
+        currentQuiz.description;
+
+
+    const publicCheckbox =
+        document.getElementById(
+            "quizPublic"
         );
+
+
+    if (publicCheckbox) {
+
+        currentQuiz.is_public =
+            publicCheckbox.checked;
+
+    }
+
+
+    if (!currentQuiz.title) {
+
+        alert(
+            "Please enter a quiz title."
+        );
+
+        return false;
+
+    }
 
 
     if (
-        titleInput &&
-        titleInput.value.trim()
+        !currentQuiz.questions.length
     ) {
 
-        currentQuiz.title =
-            titleInput.value.trim();
+        alert(
+            "Add at least one question."
+        );
+
+        return false;
 
     }
 
 
-    /*
-     * Get description.
-     */
+    for (
+        let i = 0;
+        i < currentQuiz.questions.length;
+        i++
+    ) {
 
-    const descriptionInput =
-        document.getElementById(
-            "quizDescription"
-        );
+        const q =
+            currentQuiz.questions[i];
 
 
-    if (descriptionInput) {
+        if (
+            !q.question ||
+            !q.question.trim()
+        ) {
 
-        currentQuiz.description =
-            descriptionInput.value;
+            alert(
+                `Question ${
+                    i + 1
+                } is empty.`
+            );
+
+            return false;
+
+        }
+
+
+        if (
+            !Array.isArray(
+                q.answers
+            ) ||
+            q.answers.length !== 4
+        ) {
+
+            alert(
+                `Question ${
+                    i + 1
+                } needs four answers.`
+            );
+
+            return false;
+
+        }
+
+
+        for (
+            let a = 0;
+            a < 4;
+            a++
+        ) {
+
+            if (
+                !q.answers[a] ||
+                !q.answers[a].trim()
+            ) {
+
+                alert(
+                    `Answer ${
+                        a + 1
+                    } for question ${
+                        i + 1
+                    } is empty.`
+                );
+
+                return false;
+
+            }
+
+        }
+
+
+        if (
+            q.correctAnswer < 0 ||
+            q.correctAnswer > 3
+        ) {
+
+            alert(
+                `Choose the correct answer for question ${
+                    i + 1
+                }.`
+            );
+
+            return false;
+
+        }
 
     }
 
 
-    /*
-     * Make pretty JSON.
-     */
+    return true;
 
-    const json =
-        JSON.stringify(
-            currentQuiz,
-            null,
-            2
+}
+
+
+/* =========================================================
+   SAVE
+========================================================= */
+
+async function saveCurrentQuiz() {
+
+    if (
+        !validateQuiz()
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        !window.QuizLibrary
+    ) {
+
+        alert(
+            "Library system is not loaded."
+        );
+
+        return;
+
+    }
+
+
+    const saved =
+        await QuizLibrary.saveQuiz(
+            currentQuiz
         );
 
 
-    /*
-     * Create .qz file.
-     */
+    if (saved) {
+
+        currentQuiz =
+            saved;
+
+        renderQuizEditor();
+
+    }
+
+}
+
+
+/* =========================================================
+   EXPORT .QZ
+========================================================= */
+
+function exportCurrentQuiz() {
+
+    if (
+        !currentQuiz
+    ) {
+
+        alert(
+            "Create a quiz first."
+        );
+
+        return;
+
+    }
+
+
+    const exportData = {
+
+        format:
+            "QuizForge",
+
+        version:
+            1,
+
+        title:
+            currentQuiz.title,
+
+        description:
+            currentQuiz.description,
+
+        questions:
+            currentQuiz.questions,
+
+        is_public:
+            currentQuiz.is_public
+
+    };
+
 
     const blob =
         new Blob(
-            [json],
+            [
+                JSON.stringify(
+                    exportData,
+                    null,
+                    2
+                )
+            ],
             {
                 type:
                     "application/json"
@@ -474,34 +834,11 @@ function exportQuiz() {
         url;
 
 
-    /*
-     * Clean filename.
-     */
-
-    let filename =
-        currentQuiz.title ||
-        "QuizForge-Quiz";
-
-
-    filename =
-        filename
-            .replace(
-                /[<>:"/\\|?*]/g,
-                ""
-            )
-            .trim();
-
-
-    if (!filename) {
-
-        filename =
-            "QuizForge-Quiz";
-
-    }
-
-
     link.download =
-        filename + ".qz";
+        `${safeFilename(
+            currentQuiz.title ||
+            "quiz"
+        )}.qz`;
 
 
     document.body.appendChild(
@@ -512,1149 +849,300 @@ function exportQuiz() {
     link.click();
 
 
-    document.body.removeChild(
-        link
+    link.remove();
+
+
+    URL.revokeObjectURL(
+        url
     );
+
+}
+
+
+/* =========================================================
+   IMPORT
+========================================================= */
+
+function openImportFile() {
+
+    const input =
+        document.getElementById(
+            "hiddenQuizFileInput"
+        );
+
+
+    if (!input) {
+
+        alert(
+            "Import system is not available."
+        );
+
+        return;
+
+    }
+
+
+    input.value = "";
+
+    input.click();
+
+}
+
+
+/* =========================================================
+   IMPORT FILE HANDLER
+========================================================= */
+
+function importQuizFile(
+    event
+) {
+
+    const file =
+        event.target.files?.[0];
+
+
+    if (!file) {
+        return;
+    }
 
 
     /*
-     * Free browser memory.
+     * Accept .qz and JSON.
      */
 
-    setTimeout(
+    const reader =
+        new FileReader();
+
+
+    reader.onload =
         function() {
 
-            URL.revokeObjectURL(
-                url
-            );
-
-        },
-        1000
-    );
-
-
-    alert(
-        "📤 Quiz exported!\n\n" +
-        filename +
-        ".qz"
-    );
-}
-
-
-/* =========================================================
-   UPDATE TITLE
-========================================================= */
-
-function updateQuizTitle(title) {
-
-    if (!currentQuiz) {
-        return;
-    }
-
-    currentQuiz.title =
-        title;
-
-    currentQuiz.updatedAt =
-        new Date().toISOString();
-}
-
-
-/* =========================================================
-   UPDATE DESCRIPTION
-========================================================= */
-
-function updateQuizDescription(
-    description
-) {
-
-    if (!currentQuiz) {
-        return;
-    }
-
-    currentQuiz.description =
-        description;
-
-    currentQuiz.updatedAt =
-        new Date().toISOString();
-}
-
-
-/* =========================================================
-   ADD QUESTION
-========================================================= */
-
-function addQuestion() {
-
-    if (!currentQuiz) {
-
-        createNewQuiz();
-
-    }
-
-
-    currentQuiz.questions.push({
-
-        id: generateID(),
-
-        type: "multiple-choice",
-
-        question: "",
-
-        options: [
-            "",
-            "",
-            "",
-            ""
-        ],
-
-        answer: 0,
-
-        points: 1
-
-    });
-
-
-    currentQuiz.updatedAt =
-        new Date().toISOString();
-
-
-    renderQuizEditor();
-
-}
-
-
-/* =========================================================
-   DELETE QUESTION
-========================================================= */
-
-function deleteQuestion(index) {
-
-    if (!currentQuiz) {
-        return;
-    }
-
-
-    if (
-        !confirm(
-            "Delete this question?"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    currentQuiz.questions
-        .splice(
-            index,
-            1
-        );
-
-
-    currentQuiz.updatedAt =
-        new Date().toISOString();
-
-
-    renderQuizEditor();
-
-}
-
-
-/* =========================================================
-   SAVE QUIZ LOCALLY
-========================================================= */
-
-function saveQuiz() {
-
-    if (!currentQuiz) {
-
-        alert(
-            "Create a quiz first."
-        );
-
-        return;
-
-    }
-
-
-    currentQuiz.updatedAt =
-        new Date().toISOString();
-
-
-    localStorage.setItem(
-        "quizforge_current_quiz",
-        JSON.stringify(
-            currentQuiz
-        )
-    );
-
-
-    /*
-     * Also keep a list of
-     * locally saved quizzes.
-     */
-
-    let quizzes = [];
-
-
-    try {
-
-        quizzes =
-            JSON.parse(
-                localStorage.getItem(
-                    "quizforge_my_quizzes"
-                )
-            ) || [];
-
-    }
-
-    catch {
-
-        quizzes = [];
-
-    }
-
-
-    const existingIndex =
-        quizzes.findIndex(
-            quiz =>
-                quiz.id ===
-                currentQuiz.id
-        );
-
-
-    if (existingIndex >= 0) {
-
-        quizzes[
-            existingIndex
-        ] = currentQuiz;
-
-    }
-
-    else {
-
-        quizzes.push(
-            currentQuiz
-        );
-
-    }
-
-
-    localStorage.setItem(
-        "quizforge_my_quizzes",
-        JSON.stringify(
-            quizzes
-        )
-    );
-
-
-    alert(
-        "💾 Quiz saved!"
-    );
-}
-
-
-/* =========================================================
-   LOAD SAVED QUIZ
-========================================================= */
-
-function loadSavedQuiz(
-    quizID
-) {
-
-    let quizzes = [];
-
-
-    try {
-
-        quizzes =
-            JSON.parse(
-                localStorage.getItem(
-                    "quizforge_my_quizzes"
-                )
-            ) || [];
-
-    }
-
-    catch {
-
-        return;
-
-    }
-
-
-    const quiz =
-        quizzes.find(
-            q =>
-                q.id ===
-                quizID
-        );
-
-
-    if (!quiz) {
-
-        alert(
-            "Quiz not found."
-        );
-
-        return;
-
-    }
-
-
-    currentQuiz =
-        quiz;
-
-
-    renderQuizEditor();
-
-
-    if (
-        typeof showPage ===
-        "function"
-    ) {
-
-        showPage("create");
-
-    }
-
-}
-
-
-/* =========================================================
-   RENDER QUESTIONS
-========================================================= */
-
-function renderQuestions() {
-
-    const list =
-        document.getElementById(
-            "questionList"
-        );
-
-
-    if (!list || !currentQuiz) {
-        return;
-    }
-
-
-    if (
-        currentQuiz.questions.length === 0
-    ) {
-
-        list.innerHTML = `
-
-            <div class="empty-state">
-
-                <h3>
-                    No questions yet
-                </h3>
-
-                <p>
-                    Add your first question!
-                </p>
-
-                <button
-                    class="primary"
-                    onclick="addQuestion()"
-                >
-                    ➕ Add Question
-                </button>
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    list.innerHTML =
-        currentQuiz.questions
-            .map(
-                (
-                    question,
-                    index
-                ) => {
-
-                    return `
-
-                        <div
-                            class="question-card"
-                        >
-
-                            <h3>
-                                Question
-                                ${index + 1}
-                            </h3>
-
-
-                            <textarea
-                                placeholder="Enter question..."
-                                oninput="updateQuestionText(
-                                    ${index},
-                                    this.value
-                                )"
-                            >${escapeHTML(
-                                question.question
-                            )}</textarea>
-
-
-                            <label>
-                                Answer Type
-                            </label>
-
-
-                            <select
-                                onchange="changeQuestionType(
-                                    ${index},
-                                    this.value
-                                )"
-                            >
-
-                                <option
-                                    value="multiple-choice"
-                                    ${
-                                        question.type ===
-                                        "multiple-choice"
-                                            ? "selected"
-                                            : ""
-                                    }
-                                >
-                                    Multiple Choice
-                                </option>
-
-
-                                <option
-                                    value="true-false"
-                                    ${
-                                        question.type ===
-                                        "true-false"
-                                            ? "selected"
-                                            : ""
-                                    }
-                                >
-                                    True / False
-                                </option>
-
-
-                                <option
-                                    value="written"
-                                    ${
-                                        question.type ===
-                                        "written"
-                                            ? "selected"
-                                            : ""
-                                    }
-                                >
-                                    Written Answer
-                                </option>
-
-                            </select>
-
-
-                            ${renderAnswerArea(
-                                question,
-                                index
-                            )}
-
-
-                            <label>
-                                Points
-                            </label>
-
-
-                            <input
-                                type="number"
-                                min="1"
-                                value="${
-                                    question.points || 1
-                                }"
-                                onchange="updateQuestionPoints(
-                                    ${index},
-                                    this.value
-                                )"
-                            >
-
-
-                            <button
-                                class="danger"
-                                onclick="deleteQuestion(
-                                    ${index}
-                                )"
-                            >
-                                🗑️ Delete
-                            </button>
-
-                        </div>
-
-                    `;
+            try {
+
+                const data =
+                    JSON.parse(
+                        reader.result
+                    );
+
+
+                if (
+                    !data ||
+                    !Array.isArray(
+                        data.questions
+                    )
+                ) {
+
+                    throw new Error(
+                        "Invalid QuizForge file."
+                    );
 
                 }
-            )
-            .join("");
-
-}
 
 
-/* =========================================================
-   ANSWER AREA
-========================================================= */
+                currentQuiz = {
 
-function renderAnswerArea(
-    question,
-    index
-) {
+                    id: null,
 
-    if (
-        question.type ===
-        "true-false"
-    ) {
+                    title:
+                        data.title ||
+                        "Imported Quiz",
 
-        return `
+                    description:
+                        data.description ||
+                        "",
 
-            <label>
-                Correct Answer
-            </label>
+                    questions:
+                        data.questions,
 
-            <select
-                onchange="updateQuestionAnswer(
-                    ${index},
-                    this.value
-                )"
-            >
+                    is_public:
+                        Boolean(
+                            data.is_public
+                        )
 
-                <option
-                    value="true"
-                    ${
-                        question.answer === true
-                            ? "selected"
-                            : ""
-                    }
-                >
-                    True
-                </option>
-
-                <option
-                    value="false"
-                    ${
-                        question.answer === false
-                            ? "selected"
-                            : ""
-                    }
-                >
-                    False
-                </option>
-
-            </select>
-
-        `;
-
-    }
+                };
 
 
-    if (
-        question.type ===
-        "written"
-    ) {
+                /*
+                 * Clean imported questions.
+                 */
 
-        return `
+                currentQuiz.questions =
+                    currentQuiz.questions
+                        .map(
+                            q => ({
 
-            <label>
-                Correct Answer
-            </label>
+                                question:
+                                    q.question ||
+                                    "",
 
-            <input
-                type="text"
-                placeholder="Correct answer"
-                value="${escapeHTML(
-                    question.answer || ""
-                )}"
-                oninput="updateQuestionAnswer(
-                    ${index},
-                    this.value
-                )"
-            >
+                                answers:
+                                    Array.isArray(
+                                        q.answers
+                                    )
+                                        ? [
+                                            ...q.answers,
+                                            "",
+                                            "",
+                                            "",
+                                            ""
+                                        ].slice(
+                                            0,
+                                            4
+                                        )
+                                        : [
+                                            "",
+                                            "",
+                                            "",
+                                            ""
+                                        ],
 
-        `;
+                                correctAnswer:
+                                    Number.isInteger(
+                                        q.correctAnswer
+                                    )
+                                        ? q.correctAnswer
+                                        : 0
 
-    }
-
-
-    /*
-     * Multiple choice
-     */
-
-    return `
-
-        <label>
-            Answers
-        </label>
-
-        <div class="answer-options">
-
-            ${
-                question.options
-                    .map(
-                        (
-                            option,
-                            optionIndex
-                        ) => `
-
-                            <div
-                                class="answer-row"
-                            >
-
-                                <input
-                                    type="radio"
-                                    name="correct-${index}"
-                                    ${
-                                        question.answer ===
-                                        optionIndex
-                                            ? "checked"
-                                            : ""
-                                    }
-                                    onchange="updateQuestionAnswer(
-                                        ${index},
-                                        ${optionIndex}
-                                    )"
-                                >
+                            })
+                        );
 
 
-                                <input
-                                    type="text"
-                                    placeholder="Answer ${
-                                        optionIndex + 1
-                                    }"
-                                    value="${escapeHTML(
-                                        option
-                                    )}"
-                                    oninput="updateOption(
-                                        ${index},
-                                        ${optionIndex},
-                                        this.value
-                                    )"
-                                >
+                renderQuizEditor();
 
-                            </div>
+                showPage(
+                    "create"
+                );
 
-                        `
-                    )
-                    .join("")
+
+                alert(
+                    "📥 Quiz imported! Review it and press Save Quiz."
+                );
+
+
             }
 
-        </div>
+            catch (
+                error
+            ) {
 
-    `;
-}
-
-
-/* =========================================================
-   UPDATE QUESTION TEXT
-========================================================= */
-
-function updateQuestionText(
-    index,
-    value
-) {
-
-    if (!currentQuiz) {
-        return;
-    }
+                console.error(
+                    error
+                );
 
 
-    if (
-        !currentQuiz.questions[index]
-    ) {
+                alert(
+                    "❌ Could not import this file.\n\n" +
+                    error.message
+                );
 
-        return;
+            }
 
-    }
-
-
-    currentQuiz.questions[
-        index
-    ].question = value;
+        };
 
 
-    currentQuiz.updatedAt =
-        new Date().toISOString();
+    reader.readAsText(
+        file
+    );
 
 }
 
 
 /* =========================================================
-   UPDATE QUESTION TYPE
+   SAFE FILENAME
 ========================================================= */
 
-function changeQuestionType(
-    index,
-    type
+function safeFilename(
+    name
 ) {
 
-    const question =
-        currentQuiz?.questions[
-            index
-        ];
-
-
-    if (!question) {
-        return;
-    }
-
-
-    question.type =
-        type;
-
-
-    if (
-        type ===
-        "multiple-choice"
-    ) {
-
-        question.options = [
-            "",
-            "",
-            "",
-            ""
-        ];
-
-        question.answer = 0;
-
-    }
-
-
-    if (
-        type ===
-        "true-false"
-    ) {
-
-        question.options = [];
-
-        question.answer = true;
-
-    }
-
-
-    if (
-        type ===
-        "written"
-    ) {
-
-        question.options = [];
-
-        question.answer = "";
-
-    }
-
-
-    currentQuiz.updatedAt =
-        new Date().toISOString();
-
-
-    renderQuizEditor();
-
-}
-
-
-/* =========================================================
-   UPDATE ANSWER
-========================================================= */
-
-function updateQuestionAnswer(
-    index,
-    answer
-) {
-
-    if (!currentQuiz) {
-        return;
-    }
-
-
-    const question =
-        currentQuiz.questions[
-            index
-        ];
-
-
-    if (!question) {
-        return;
-    }
-
-
-    if (
-        question.type ===
-        "multiple-choice"
-    ) {
-
-        question.answer =
-            Number(answer);
-
-    }
-
-    else if (
-        question.type ===
-        "true-false"
-    ) {
-
-        question.answer =
-            answer === true ||
-            answer === "true";
-
-    }
-
-    else {
-
-        question.answer =
-            answer;
-
-    }
-
-
-    currentQuiz.updatedAt =
-        new Date().toISOString();
-
-}
-
-
-/* =========================================================
-   UPDATE OPTION
-========================================================= */
-
-function updateOption(
-    questionIndex,
-    optionIndex,
-    value
-) {
-
-    if (!currentQuiz) {
-        return;
-    }
-
-
-    const question =
-        currentQuiz.questions[
-            questionIndex
-        ];
-
-
-    if (!question) {
-        return;
-    }
-
-
-    if (
-        !Array.isArray(
-            question.options
+    return String(
+        name || "quiz"
+    )
+        .replace(
+            /[<>:"/\\|?*]+/g,
+            "_"
         )
-    ) {
-
-        question.options = [
-            "",
-            "",
-            "",
-            ""
-        ];
-
-    }
-
-
-    question.options[
-        optionIndex
-    ] = value;
-
-
-    currentQuiz.updatedAt =
-        new Date().toISOString();
+        .replace(
+            /\s+/g,
+            "_"
+        )
+        .substring(
+            0,
+            80
+        );
 
 }
 
 
 /* =========================================================
-   UPDATE POINTS
+   HTML ESCAPE
 ========================================================= */
 
-function updateQuestionPoints(
-    index,
+function escapeHTML(
     value
 ) {
 
-    if (!currentQuiz) {
-        return;
-    }
-
-
-    const points =
-        Math.max(
-            1,
-            Number(value) || 1
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
         );
-
-
-    currentQuiz.questions[
-        index
-    ].points =
-        points;
-
-
-    currentQuiz.updatedAt =
-        new Date().toISOString();
 
 }
 
 
 /* =========================================================
-   MAIN EDITOR RENDER
+   GLOBALS
 ========================================================= */
 
-function renderQuizEditor() {
+window.currentQuiz =
+    currentQuiz;
 
-    const editor =
-        document.getElementById(
-            "quizEditor"
-        );
+window.createNewQuiz =
+    createNewQuiz;
 
+window.renderQuizEditor =
+    renderQuizEditor;
 
-    if (!editor) {
-        return;
-    }
+window.addQuestion =
+    addQuestion;
 
+window.deleteQuestion =
+    deleteQuestion;
 
-    if (!currentQuiz) {
+window.saveCurrentQuiz =
+    saveCurrentQuiz;
 
-        editor.innerHTML = `
+window.exportCurrentQuiz =
+    exportCurrentQuiz;
 
-            <div class="card">
+window.importQuizFile =
+    importQuizFile;
 
-                <h2>
-                    🆕 New Blank Quiz
-                </h2>
-
-                <p>
-                    Create a brand-new quiz
-                    or import a .qz file.
-                </p>
-
-
-                <button
-                    class="primary"
-                    onclick="createNewQuiz()"
-                >
-                    ➕ Create Blank Quiz
-                </button>
-
-
-                <button
-                    onclick="openImportFile()"
-                >
-                    📥 Import .qz
-                </button>
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    editor.innerHTML = `
-
-        <div class="card">
-
-            <div class="editor-top">
-
-                <h1>
-                    ✏️ Quiz Editor
-                </h1>
-
-
-                <div>
-
-                    <button
-                        onclick="createNewQuiz()"
-                    >
-                        🆕 New
-                    </button>
-
-
-                    <button
-                        onclick="openImportFile()"
-                    >
-                        📥 Import
-                    </button>
-
-
-                    <button
-                        class="primary"
-                        onclick="exportQuiz()"
-                    >
-                        📤 Export .qz
-                    </button>
-
-                </div>
-
-            </div>
-
-
-            <label>
-                Quiz Title
-            </label>
-
-
-            <input
-                id="quizTitle"
-                type="text"
-                placeholder="My Quiz"
-                value="${escapeHTML(
-                    currentQuiz.title
-                )}"
-                oninput="updateQuizTitle(
-                    this.value
-                )"
-            >
-
-
-            <label>
-                Description
-            </label>
-
-
-            <textarea
-                id="quizDescription"
-                placeholder="Describe your quiz..."
-                oninput="updateQuizDescription(
-                    this.value
-                )"
-            >${escapeHTML(
-                currentQuiz.description
-            )}</textarea>
-
-
-            <hr>
-
-
-            <div class="question-header">
-
-                <h2>
-                    ❓ Questions
-                </h2>
-
-
-                <button
-                    class="primary"
-                    onclick="addQuestion()"
-                >
-                    ➕ Add Question
-                </button>
-
-            </div>
-
-
-            <div
-                id="questionList"
-            ></div>
-
-
-            <hr>
-
-
-            <div class="editor-actions">
-
-                <button
-                    class="primary"
-                    onclick="saveQuiz()"
-                >
-                    💾 Save Quiz
-                </button>
-
-
-                <button
-                    onclick="exportQuiz()"
-                >
-                    📤 Export .qz
-                </button>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    renderQuestions();
-
-}
+window.openImportFile =
+    openImportFile;
 
 
 /* =========================================================
-   AUTOMATICALLY RESTORE LAST SAVED QUIZ
-   ONLY WHEN EXPLICITLY REQUESTED
+   IMPORTANT:
+   Do NOT automatically load the previous quiz.
+   The Create button always calls createNewQuiz().
 ========================================================= */
-
-function restoreSavedQuiz() {
-
-    /*
-     * We deliberately DO NOT call this
-     * when Create is opened.
-     *
-     * Create must always be blank.
-     */
-
-    const saved =
-        localStorage.getItem(
-            "quizforge_current_quiz"
-        );
-
-
-    if (!saved) {
-        return false;
-    }
-
-
-    try {
-
-        currentQuiz =
-            JSON.parse(saved);
-
-        renderQuizEditor();
-
-        return true;
-
-    }
-
-    catch(error) {
-
-        console.error(
-            "Could not restore quiz:",
-            error
-        );
-
-        return false;
-
-    }
-
-}
-
-
-/* =========================================================
-   INITIAL EDITOR
-========================================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
-
-        renderQuizEditor();
-
-    }
-);
-<button
-    class="primary"
-    onclick="QuizLibrary.saveQuiz(currentQuiz)"
->
-    💾 Save Quiz
-</button>
